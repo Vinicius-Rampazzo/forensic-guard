@@ -1,0 +1,58 @@
+# ---------------------------------------------------------------------------
+# Python / backend
+# ---------------------------------------------------------------------------
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# ---------------------------------------------------------------------------
+# Node / frontend
+# ---------------------------------------------------------------------------
+node_modules/
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+.eslintcache
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ---------------------------------------------------------------------------
+# Environment
+# Segredos e configuracao local nunca entram no git.
+# Os arquivos .example sao versionados: eles documentam o CONTRATO
+# de quais variaveis existem, sem revelar valores.
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+!.env.local.example
+
+# ---------------------------------------------------------------------------
+# Evidencias temporarias
+# O ForensicGuard nao persiste evidencias. Se algum arquivo temporario
+# escapar da limpeza, ele nunca deve chegar ao repositorio.
+# ---------------------------------------------------------------------------
+tmp/
+temp/
+backend/tmp/
+
+# ---------------------------------------------------------------------------
+# Editores e sistema operacional
+# ---------------------------------------------------------------------------
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store

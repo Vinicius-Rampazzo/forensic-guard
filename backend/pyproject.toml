@@ -1,0 +1,19 @@
+[tool.pytest.ini_options]
+# pythonpath = ["."] adiciona a pasta backend/ ao sys.path durante os testes.
+# E isso que faz "from app.main import create_app" funcionar sem precisar
+# instalar o projeto como pacote.
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# E/W: erros e avisos de estilo (pycodestyle)
+# F:   erros logicos (pyflakes) - variavel nao usada, import nao usado
+# I:   ordenacao de imports (isort)
+# B:   armadilhas comuns (flake8-bugbear)
+# UP:  sintaxe moderna de Python (pyupgrade)
+select = ["E", "W", "F", "I", "B", "UP"]

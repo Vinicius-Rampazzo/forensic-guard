@@ -1,0 +1,11 @@
+# Dependencias de desenvolvimento.
+#
+# A primeira linha importa o requirements.txt: instalar este arquivo instala
+# tudo o que o projeto precisa para rodar E para ser testado.
+# Em producao instala-se apenas o requirements.txt, sem ferramenta de teste.
+
+-r requirements.txt
+
+pytest==9.1.1
+httpx2==2.12.0     # cliente HTTP usado pelo TestClient do Starlette 1.6+
+ruff==0.16.6       # linter e formatador

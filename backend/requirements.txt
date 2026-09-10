@@ -1,0 +1,14 @@
+# Dependencias de execucao do ForensicGuard.
+#
+# As versoes sao fixadas (==) de proposito: reprodutibilidade.
+# Um "fastapi>=0.141" instalaria uma versao diferente amanha e o projeto
+# poderia quebrar sem que nenhuma linha de codigo tivesse mudado.
+#
+# Regra do projeto: uma biblioteca so entra aqui na etapa em que passa a ser
+# usada de fato. puremagic entra na deteccao de tipo; Pillow e exifread
+# entram na forense de imagem.
+
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+pydantic==2.13.5
+pydantic-settings==2.15.0
