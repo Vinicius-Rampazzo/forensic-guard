@@ -350,7 +350,11 @@ forensic-guard/
 
 ## Documentation
 
-The full technical specification lives in [`docs/project-context.md`](docs/project-context.md).
+| Document | Contents |
+| --- | --- |
+| [`docs/roadmap.md`](docs/roadmap.md) | Current status, what is done and what comes next |
+| [`docs/project-context.md`](docs/project-context.md) | Original technical specification |
+| [`AGENTS.md`](AGENTS.md) | Conventions, architecture rules and working agreement — read this before contributing, with or without an AI assistant |
 
 ---
 
