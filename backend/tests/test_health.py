@@ -1,32 +1,35 @@
 """Testes da rota de health check.
 
 Sao testes simples de proposito. O valor deles nao esta em cobrir logica
-complexa - nao ha logica aqui - e sim em provar que a aplicacao monta:
-config carregada, router registrado, schema valido. Se algum desses passos
-quebrar em uma etapa futura, este teste falha primeiro.
+complexa - nao ha logica ali - e sim em provar que a aplicacao monta: config
+carregada, router registrado, schema valido. Se algum desses passos quebrar em
+uma etapa futura, este teste falha primeiro.
 """
 
 from fastapi.testclient import TestClient
 
 
-def test_health_returns_200(client: TestClient) -> None:
-    """A rota responde com sucesso."""
-    response = client.get("/health")
+class TestHealthEndpoint:
+    """A rota GET /health responde conforme o contrato."""
 
-    assert response.status_code == 200
+    def test_responds_with_success(self, client: TestClient) -> None:
+        """A rota esta registrada e acessivel."""
+        assert client.get("/health").status_code == 200
+
+    def test_payload_matches_the_declared_schema(self, client: TestClient) -> None:
+        """O corpo respeita o contrato definido em HealthResponse."""
+        payload = client.get("/health").json()
+
+        assert payload["status"] == "ok"
+        assert payload["app"] == "ForensicGuard"
+        assert "version" in payload
 
 
-def test_health_returns_expected_payload(client: TestClient) -> None:
-    """O corpo da resposta respeita o contrato definido em HealthResponse."""
-    payload = client.get("/health").json()
+class TestOpenApiDocumentation:
+    """A documentacao automatica reflete as rotas existentes."""
 
-    assert payload["status"] == "ok"
-    assert payload["app"] == "ForensicGuard"
-    assert "version" in payload
+    def test_health_route_appears_in_the_schema(self, client: TestClient) -> None:
+        """A rota e documentada em /docs e /openapi.json sem esforco manual."""
+        schema = client.get("/openapi.json").json()
 
-
-def test_openapi_schema_documents_health_route(client: TestClient) -> None:
-    """A rota aparece na documentacao automatica (/docs e /openapi.json)."""
-    schema = client.get("/openapi.json").json()
-
-    assert "/health" in schema["paths"]
+        assert "/health" in schema["paths"]
