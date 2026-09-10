@@ -4,7 +4,14 @@
 # instalar o projeto como pacote.
 pythonpath = ["."]
 testpaths = ["tests"]
-addopts = "-q"
+
+# -v          lista cada teste pelo nome, em vez de imprimir apenas pontos.
+#             Sem isso, "45 passed" nao permite verificar QUAIS testes rodaram:
+#             se um arquivo sumir ou deixar de ser coletado, o numero muda e
+#             ninguem percebe.
+# --tb=short  em caso de falha, mostra o essencial em vez de paginas de pilha.
+# -ra         resumo no fim com tudo que nao passou (falhas, erros, pulados).
+addopts = "-v --tb=short -ra"
 
 [tool.ruff]
 line-length = 100
