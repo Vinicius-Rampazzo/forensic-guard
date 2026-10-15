@@ -7,7 +7,7 @@ registra os routers. Nenhuma regra de negocio mora aqui.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import health
+from app.api.routes import analysis, health
 from app.config import get_settings
 
 
@@ -45,6 +45,7 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(health.router)
+    app.include_router(analysis.router)
 
     return app
 

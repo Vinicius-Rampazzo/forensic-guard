@@ -120,10 +120,16 @@ Calcular inicialmente:
 
 ## Identificação de arquivos
 
-Utilizar preferencialmente:
+> **Atualização (Etapa 3, outubro de 2026):** `python-magic` foi **descartado**.
+> Ele depende da biblioteca nativa `libmagic`, cujo pacote para Windows
+> (`python-magic-bin`) está sem manutenção desde 2014 e quebra em Python 3.12+.
+> A decisão em vigor está registrada em [`roadmap.md`](roadmap.md) e em
+> [`AGENTS.md`](../AGENTS.md).
 
-- `python-magic`
-- leitura manual de magic bytes quando necessário
+Utilizar:
+
+- tabela própria de magic bytes em `app/constants/signatures.py`
+- `puremagic` como segunda opinião (Python puro, sem biblioteca nativa)
 
 Objetivo:
 
@@ -1377,7 +1383,7 @@ Python + FastAPI + Pydantic + Uvicorn
 
 Forensics
 hashlib
-python-magic
+puremagic
 Pillow
 exifread
 email
