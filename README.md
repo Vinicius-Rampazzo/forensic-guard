@@ -26,7 +26,7 @@ suspicious indicators, metadata anomalies and potential security threats.
 | --- | --- |
 | Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS 4 |
 | Backend | Python 3.12+, FastAPI, Pydantic, Uvicorn |
-| Forensics | hashlib, puremagic |
+| Forensics | hashlib, puremagic, Pillow |
 | Tests | pytest |
 | Persistence | none |
 
@@ -316,6 +316,104 @@ the codebase.
 
 Email indicators — SPF, DKIM, DMARC, sender mismatch — arrive with the email
 analyser. See [`docs/roadmap.md`](docs/roadmap.md).
+
+---
+
+## Image forensics
+
+When the evidence is an image, the response gains an `image` section with
+dimensions, colour mode, EXIF metadata, the device that took the photo, the
+software that edited it, and GPS coordinates converted to decimal degrees.
+
+```json
+"image": {
+  "width": 4032,
+  "height": 3024,
+  "megapixels": 12.19,
+  "image_format": "JPEG",
+  "device_make": "Apple",
+  "device_model": "iPhone 15 Pro",
+  "software": "Adobe Photoshop 25.1",
+  "created_at": "2026:10:15 09:12:00",
+  "gps": { "latitude": -22.12, "longitude": -51.39 }
+}
+```
+
+Two things this deliberately does **not** treat as findings:
+
+- **A photo without EXIF.** Every social network strips metadata on upload, so
+  most images in circulation have none. Absence of EXIF is the normal case.
+- **Editing software.** Most professional photography passes through an
+  editor. `Adobe Photoshop` in the metadata is information, not an accusation.
+
+GPS raises an indicator worth **zero points**. Embedded location does not make
+a file dangerous — it makes the person who shared it exposed. The indicator
+exists to warn, not to accuse.
+
+### Reading hostile images safely
+
+Images are never decoded. `Image.open()` reads only the header, and the code
+never calls `.load()`, `.convert()` or anything else that would touch the
+pixels.
+
+That matters because of **decompression bombs**: a file of a few hundred bytes
+whose header declares tens of thousands of pixels per side. Decoding it would
+demand gigabytes of memory and take the service down. Reading only the header,
+the bomb never goes off — and the attempt still gets reported:
+
+```json
+{
+  "id": "image.decompression_bomb",
+  "severity": "high",
+  "score": 25,
+  "evidence": { "file_size_bytes": 68, "pixel_limit": 250000000 }
+}
+```
+
+---
+
+## Email forensics
+
+An `.eml` file is the message exactly as it travelled: headers, a blank line,
+and the body. The response gains an `email` section with the headers, the
+`Received` chain, the authentication verdict, every link, and the attachments.
+
+The most important fact about email analysis is this: **almost every header is
+written by whoever sent the message.** `From`, `Reply-To`, `Subject` and `Date`
+are not verified by anything — forging a sender is trivial. The fields that
+carry evidentiary weight are `received_chain` and `authentication`, because
+those are added by the servers the message passed through.
+
+### What gets checked
+
+| Check | Why it matters |
+| --- | --- |
+| SPF / DKIM / DMARC | Read from `Authentication-Results`. The receiving server already did the verification; repeating it over DNS would need network access and would judge an old message against today's records. |
+| Reply-To and Return-Path domains | A reply or a bounce going somewhere other than the sender's domain. Newsletters do this legitimately, so the weight is modest. |
+| Link text vs destination | `<a href="http://evil.example">www.banco.com.br</a>` — the defining technique of phishing. Neither the text nor the URL reveals it alone. |
+| Attachments | Each one is written to a temporary file and runs through the **same** pipeline as the main evidence, with its own risk score. |
+
+### Recursive attachment analysis
+
+An attachment named `fatura.pdf` whose bytes start with `MZ` is reported as a
+disguised executable, with its own `critical` score, nested inside the email's
+report:
+
+```
+phishing.eml                     RISK 100  CRITICAL
+  Reply-To    ...@gmail.com      <- different domain
+  SPF fail | DKIM fail | DMARC fail
+  LINK  shows "www.empresa.com.br" -> http://203.0.113.45/login
+  ATTACHMENT fatura.pdf
+      declared: application/pdf
+      detected: Windows executable (PE / MZ)
+      RISK 100  CRITICAL
+```
+
+Recursion is capped at depth 2 and 20 attachments. Without a limit, an email
+containing an email containing an email would descend until the stack or the
+disk ran out. Attachments beyond the limit are still listed — hiding them
+would be worse than not analysing them.
 
 ---
 

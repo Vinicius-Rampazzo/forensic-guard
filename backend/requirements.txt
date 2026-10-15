@@ -5,7 +5,7 @@
 # poderia quebrar sem que nenhuma linha de codigo tivesse mudado.
 #
 # Regra do projeto: uma biblioteca so entra aqui na etapa em que passa a ser
-# usada de fato. Pillow e exifread entram na forense de imagem.
+# usada de fato.
 
 fastapi==0.141.1
 uvicorn[standard]==0.52.4
@@ -21,3 +21,10 @@ python-multipart==0.0.32
 # decide primeiro, e o puremagic responde pelos formatos que ela nao cobre.
 # Substitui o python-magic, que exige libmagic/DLL e quebra no Windows.
 puremagic==2.2.0
+
+# Leitura de imagens: dimensoes, modo de cor, EXIF e GPS.
+#
+# O exifread, citado na especificacao, ficou de fora: o Pillow ja cobre tudo
+# o que o MVP precisa, e uma dependencia a menos e uma superficie de ataque a
+# menos num projeto que processa arquivos hostis.
+Pillow==12.3.0

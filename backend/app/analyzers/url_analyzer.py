@@ -13,7 +13,18 @@ intencao.
 from __future__ import annotations
 
 import ipaddress
+import re
 from urllib.parse import urlsplit
+
+# Reconhece algo com cara de dominio dentro de um texto qualquer.
+#
+# Exige pelo menos um ponto e um sufixo de duas letras ou mais, para nao casar
+# com palavras comuns. Nao e uma validacao de dominio - e uma pista de que o
+# texto esta se apresentando como um endereco.
+DOMAIN_IN_TEXT_PATTERN = re.compile(
+    r"\b(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}\b",
+    re.IGNORECASE,
+)
 
 # Prefixo que identifica dominios codificados em punycode.
 #
@@ -76,6 +87,51 @@ def has_punycode_domain(url: str) -> bool:
         return False
 
     return any(label.startswith(PUNYCODE_PREFIX) for label in host.split("."))
+
+
+def is_misleading_link(url: str, display_text: str) -> bool:
+    """Diz se o texto exibido de um link aponta para um destino diferente.
+
+    A tecnica classica de phishing num e-mail HTML:
+
+        <a href="http://evil.example/x">www.banco.com.br</a>
+
+    O usuario le `www.banco.com.br` e clica para `evil.example`. Nem o texto
+    nem a URL, isolados, revelam o problema - e preciso comparar os dois.
+
+    Como a comparacao e feita
+    -------------------------
+    Se o texto exibido nao contem nada parecido com um dominio - "Clique
+    aqui", "Ver fatura" - nao ha nada a comparar, e o link nao e marcado.
+
+    Quando contem, o link so e considerado enganoso se o destino real **nao
+    terminar** com o dominio exibido. Essa regra evita o falso positivo mais
+    comum:
+
+        exibido `banco.com.br`, destino `login.banco.com.br`   -> normal
+        exibido `www.banco.com.br`, destino `evil.example`     -> enganoso
+
+    Limitacao conhecida e aceita: sem uma lista de sufixos publicos, a
+    comparacao e por sufixo de hostname. Um dominio hostil chamado
+    `evil-banco.com.br` nao termina em `banco.com.br` e seria marcado
+    corretamente, mas `banco.com.br.evil.example` tambem nao termina nele - e
+    tambem seria marcado. Os dois casos sao de fato suspeitos, entao o erro
+    cai para o lado seguro.
+    """
+    destination = extract_host(url)
+
+    if destination is None:
+        return False
+
+    match = DOMAIN_IN_TEXT_PATTERN.search(display_text)
+
+    if match is None:
+        return False
+
+    displayed = match.group(0).lower().removeprefix("www.")
+    destination = destination.removeprefix("www.")
+
+    return not destination.endswith(displayed)
 
 
 def find_ip_address_urls(urls: list[str]) -> list[str]:

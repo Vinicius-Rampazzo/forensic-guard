@@ -174,6 +174,8 @@ necessário ativar o venv.
 | **Leitura sempre em blocos** | `path.read_bytes()` em upload de 500 MB é vetor de negação de serviço. |
 | **Hashes e entropia em funções independentes** | Cada uma faz sua leitura. O cache do sistema operacional torna o custo baixo, e a testabilidade compensa. |
 | **Sem arquivos placeholder vazios** | Cada arquivo nasce com conteúdo. As pastas existem via `__init__.py`. |
+| **`exifread` está fora** | O Pillow já cobre dimensões, modo de cor, EXIF e GPS. Uma dependência a menos é uma superfície de ataque a menos. |
+| **Imagens nunca são decodificadas** | `Image.open()` lê só o cabeçalho. Nunca chamar `.load()`, `.convert()` ou salvar — é o que neutraliza *decompression bombs*. |
 
 ---
 
