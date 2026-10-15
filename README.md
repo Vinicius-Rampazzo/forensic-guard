@@ -26,8 +26,13 @@ suspicious indicators, metadata anomalies and potential security threats.
 | --- | --- |
 | Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS 4 |
 | Backend | Python 3.12+, FastAPI, Pydantic, Uvicorn |
+| Forensics | hashlib, puremagic |
 | Tests | pytest |
 | Persistence | none |
+
+Every Python dependency is pure Python — no native libraries, no system
+packages, no compiler. The project installs and runs identically on Windows,
+Linux and macOS.
 
 ---
 
@@ -197,7 +202,7 @@ Two more addresses worth opening:
 
 | Address | What it is |
 | --- | --- |
-| http://127.0.0.1:8000/health | The API endpoint itself, as raw JSON |
+| http://127.0.0.1:8000/health | Liveness check, as raw JSON |
 | http://127.0.0.1:8000/docs | Interactive API documentation, generated automatically |
 
 To run the test suite:
@@ -205,6 +210,112 @@ To run the test suite:
 ```bash
 python backend/dev.py test
 ```
+
+---
+
+## Analysing a file
+
+The API is usable without the interface. Open http://127.0.0.1:8000/docs,
+expand **POST /analyze**, click *Try it out*, pick a file and execute.
+
+From the command line:
+
+```bash
+curl -X POST http://127.0.0.1:8000/analyze -F "file=@suspicious.jpg"
+```
+
+The response reports what the file is, what it claims to be, and what was
+found inside it:
+
+```json
+{
+  "filename": "invoice.jpg",
+  "file": {
+    "size": 234,
+    "entropy": 5.11,
+    "hashes": { "md5": "...", "sha1": "...", "sha256": "...", "sha512": "..." }
+  },
+  "detection": {
+    "evidence_type": "file",
+    "declared_extension": ".jpg",
+    "detected_name": "Windows executable (PE / MZ)",
+    "detected_category": "executable",
+    "confirmed_bytes": 2,
+    "mismatch": "executable_disguised"
+  },
+  "strings": {
+    "total": 6,
+    "returned": 6,
+    "truncated": false,
+    "sample": ["powershell.exe -windowstyle hidden -EncodedCommand ..."],
+    "artifacts": {
+      "urls": ["https://cdn.malicious-example.com/stage2.bin"],
+      "ipv4": ["203.0.113.45"],
+      "suspicious_keywords": ["powershell.exe", "-encodedcommand"]
+    }
+  },
+  "risk": {
+    "score": 100,
+    "level": "critical",
+    "indicators": [
+      {
+        "id": "file.executable_disguised",
+        "title": "Executable disguised as another file type",
+        "description": "The file content is an executable program, but its name suggests a document, image or other harmless type...",
+        "severity": "critical",
+        "score": 50,
+        "evidence": {
+          "declared_extension": ".jpg",
+          "detected_type": "Windows executable (PE / MZ)",
+          "confirmed_bytes": 2
+        }
+      }
+    ]
+  },
+  "disclaimer": "ForensicGuard performs static triage based on indicators and heuristics..."
+}
+```
+
+Uploads above the configured limit (25 MB by default) are rejected with
+`413`. The evidence is written to a temporary file with an internally
+generated name and deleted as soon as the analysis finishes — including when
+it fails.
+
+---
+
+## How the risk score works
+
+The score is the sum of every indicator that fired, capped at 100.
+
+| Score | Level |
+| --- | --- |
+| 0 – 20 | low |
+| 21 – 50 | medium |
+| 51 – 75 | high |
+| 76 – 100 | critical |
+
+**Every indicator carries the evidence that triggered it.** That is the whole
+point: a number without a justification is an opinion, and a forensic report
+cannot be an opinion. Each entry tells you which rule fired, how many points
+it added, and the concrete data behind it — so you can check the conclusion
+yourself, and disagree with it.
+
+Two design choices worth knowing about:
+
+- **High entropy only counts when it is unexpected.** Archives, images and
+  video are compressed by nature and always score close to 8. Flagging them
+  would fill every report with noise and teach you to ignore the score. The
+  indicator fires on text, documents, executables and unrecognised formats.
+- **A disguised executable raises two indicators**, not one: it is both an
+  extension mismatch (35) and a disguised executable (50). They are two
+  distinct observations about the same fact, and each is explained separately.
+
+All weights and thresholds live in a single file,
+`backend/app/constants/risk_rules.py`. No score is written anywhere else in
+the codebase.
+
+Email indicators — SPF, DKIM, DMARC, sender mismatch — arrive with the email
+analyser. See [`docs/roadmap.md`](docs/roadmap.md).
 
 ---
 

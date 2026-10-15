@@ -5,10 +5,19 @@
 # poderia quebrar sem que nenhuma linha de codigo tivesse mudado.
 #
 # Regra do projeto: uma biblioteca so entra aqui na etapa em que passa a ser
-# usada de fato. puremagic entra na deteccao de tipo; Pillow e exifread
-# entram na forense de imagem.
+# usada de fato. Pillow e exifread entram na forense de imagem.
 
 fastapi==0.141.1
 uvicorn[standard]==0.52.4
 pydantic==2.13.5
 pydantic-settings==2.15.0
+
+# Leitura de uploads multipart/form-data. O FastAPI nao a instala por padrao,
+# mas exige sua presenca em qualquer rota que receba arquivo.
+python-multipart==0.0.32
+
+# Deteccao de tipo de arquivo em Python puro, sem bibliotecas nativas.
+# Usada como segunda opiniao: a tabela propria em app/constants/signatures.py
+# decide primeiro, e o puremagic responde pelos formatos que ela nao cobre.
+# Substitui o python-magic, que exige libmagic/DLL e quebra no Windows.
+puremagic==2.2.0

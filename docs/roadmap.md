@@ -16,9 +16,10 @@ branch é criada de antemão: quando a etapa fecha, ele commita, integra na
 
 | | |
 | --- | --- |
-| **Última etapa concluída** | Etapa 2 — Núcleo de análise de arquivo |
-| **Próxima etapa** | Etapa 3 — Detecção de tipo |
-| **Nada funciona ponta a ponta ainda** | A primeira entrega visível é a Etapa 4, quando o `POST /analyze` conecta as peças |
+| **Última etapa concluída** | Etapa 5 — Risk Engine |
+| **Próxima etapa** | Etapa 6 — Forense de imagem |
+| **Já funciona ponta a ponta** | `POST /analyze` devolve hashes, entropia, tipo detectado, mismatch, artefatos, **Risk Score e indicadores explicáveis**. Experimente em `/docs`. |
+| **Testes** | 194, todos passando |
 
 ---
 
@@ -52,43 +53,60 @@ Branch: `feat/file-core` · Commit: `0d02a26`
 
 ---
 
-## Etapa 3 — Detecção de tipo ⏳ próxima
+## Etapa 3 — Detecção de tipo ✅
 
-- [ ] `constants/signatures.py` — tabela de magic bytes
-- [ ] `utils/signatures.py` — casador de assinatura, com `puremagic` como segunda opinião
-- [ ] `services/evidence_detector.py` — classifica em `file` / `image` / `email`
-- [ ] Regra de mismatch entre extensão declarada e assinatura real
-- [ ] Testes, incluindo fixture de extensão falsa
-- [ ] Adicionar `puremagic` ao `requirements.txt` e atualizar o README
-- [ ] Corrigir a divergência do `python-magic` em `project-context.md`
+Branch: `feat/type-detection`
+
+- [x] `constants/signatures.py` — tabela com 33 formatos, suporte a múltiplos padrões por formato e offsets diferentes de zero
+- [x] `utils/signatures.py` — casador por especificidade, com `puremagic` como segunda opinião
+- [x] `services/evidence_detector.py` — classifica em `file` / `image` / `email`
+- [x] Regra de mismatch, distinguindo `executable_disguised` de `type_mismatch`
+- [x] Tratamento de extensões alternativas (`.jpeg`) e formatos contêiner (`.docx` é ZIP)
+- [x] Detecção de `.eml` por heurística de cabeçalhos, independente da extensão
+- [x] 56 testes novos (101 no total)
+- [x] `puremagic==2.2.0` no `requirements.txt` e README atualizado
+- [x] Divergência do `python-magic` corrigida em `project-context.md`
 
 ---
 
-## Etapa 4 — API de análise
+## Etapa 4 — API de análise ✅
+
+Branch: `feat/type-detection` *(as etapas 3 e 4 fecharam na mesma branch, por
+decisão do Vinicius)*
 
 **Primeira etapa com resultado visível:** dá para subir um arquivo pelo `/docs`
 e receber o JSON da análise.
 
-- [ ] `utils/temporary_files.py` — UUID, context manager, remoção garantida
-- [ ] `schemas/analysis.py` — contrato Pydantic da resposta
-- [ ] `analyzers/file_analyzer.py` — orquestra as etapas 2 e 3
-- [ ] `POST /analyze` com limite de tamanho de upload
-- [ ] Proteção contra path traversal
-- [ ] Testes de upload e de limpeza dos temporários
+- [x] `utils/temporary_files.py` — nome por UUID, context manager, remoção em `finally`
+- [x] Limite de upload verificado durante a escrita, com remoção do arquivo parcial
+- [x] `schemas/analysis.py` — contrato Pydantic da resposta
+- [x] `analyzers/file_analyzer.py` — fatos genéricos do arquivo
+- [x] `services/analysis_service.py` — orquestra detector + analisador *(não previsto; necessário para respeitar as camadas)*
+- [x] `POST /analyze`, rota síncrona executada em pool de threads
+- [x] Proteção contra path traversal no nome do upload
+- [x] 34 testes novos (135 no total), incluindo o de "nada fica em disco"
+- [x] `python-multipart==0.0.32` no `requirements.txt` e README atualizado
 
 ---
 
-## Etapa 5 — Risk Engine
+## Etapa 5 — Risk Engine ✅
 
-- [ ] Modelo `Indicator`: `id`, `title`, `description`, `severity`, `score`, `evidence`
-- [ ] `constants/risk_rules.py` — todos os pesos centralizados
-- [ ] `services/risk_engine.py` — soma com teto de 100
-- [ ] Faixas LOW / MEDIUM / HIGH / CRITICAL
-- [ ] Testes das regras de pontuação
+Branch: `feat/type-detection` *(etapas 3, 4 e 5 fecharam na mesma branch, por
+decisão do Vinicius)*
+
+- [x] Modelo `Indicator`: regra que disparou + evidência que a justificou
+- [x] `constants/risk_rules.py` — 7 regras, pesos, severidades e faixas centralizados
+- [x] `services/indicator_engine.py` — traduz fatos em indicadores *(separado do risk_engine, como na especificação)*
+- [x] `services/risk_engine.py` — soma com teto de 100 e classificação
+- [x] `analyzers/url_analyzer.py` — URL por IP e domínio punycode *(antecipado da Etapa 7, só a parte necessária)*
+- [x] Entropia alta só gera indicador quando inesperada para o formato
+- [x] Faixas LOW / MEDIUM / HIGH / CRITICAL, com testes em cada borda
+- [x] 59 testes novos (194 no total)
+- [x] README com a seção "How the risk score works"
 
 ---
 
-## Etapa 6 — Forense de imagem
+## Etapa 6 — Forense de imagem ⏳ próxima
 
 - [ ] `analyzers/image_analyzer.py` com Pillow e exifread
 - [ ] Dimensões, formato, modo de cor
@@ -146,9 +164,10 @@ posteriores. **Em caso de conflito, este roadmap e o
 
 | O documento diz | A decisão atual |
 | --- | --- |
-| Usar `python-magic` preferencialmente (seção 5) | Descartado — quebra no Windows. Tabela própria + `puremagic`. |
+| ~~Usar `python-magic`~~ | ✅ corrigido no documento na Etapa 3. |
 | Estrutura do backend (seção 7) | Não inclui `dev.py`, `pyproject.toml`, `requirements-dev.txt` nem `utils/streaming.py`. |
 | Nada sobre ferramentas de qualidade | O projeto usa `ruff` e `httpx2`. |
+| Formatos suportados (seção 13) | A tabela de assinaturas cobre 33 formatos, incluindo executáveis Linux/macOS, SQLite e atalhos `.lnk`. |
 
 ---
 
