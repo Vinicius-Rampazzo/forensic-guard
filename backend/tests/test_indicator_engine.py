@@ -9,8 +9,9 @@ ignorar os alertas.
 from pathlib import Path
 
 from app.analyzers.file_analyzer import analyze_file
+from app.analyzers.image_analyzer import GpsCoordinates, ImageAnalysis
 from app.services.evidence_detector import detect_evidence
-from app.services.indicator_engine import collect_indicators
+from app.services.indicator_engine import _image_indicators, collect_indicators
 
 PADDING = b"\x00" * 64
 
@@ -140,6 +141,69 @@ class TestUrlIndicators:
 
         assert "url.ip_address_host" not in ids
         assert "url.punycode_domain" not in ids
+
+
+class TestImageIndicators:
+    """Indicadores especificos de imagem."""
+
+    def test_gps_raises_an_informational_indicator(self) -> None:
+        """Localizacao embutida avisa, nao acusa.
+
+        Pontua zero de proposito: a foto nao fica perigosa por saber onde foi
+        tirada. Quem fica exposto e quem a enviou.
+        """
+        image = ImageAnalysis(width=64, height=48, gps=GpsCoordinates(-22.12, -51.39))
+
+        indicators = _image_indicators(image, file_size=1024)
+
+        assert len(indicators) == 1
+        assert indicators[0].rule.id == "image.gps_coordinates"
+        assert indicators[0].rule.score == 0
+        assert indicators[0].evidence["latitude"] == -22.12
+
+    def test_decompression_bomb_raises_a_scored_indicator(self) -> None:
+        image = ImageAnalysis(decompression_bomb=True, error="too many pixels")
+
+        indicators = _image_indicators(image, file_size=68)
+
+        assert indicators[0].rule.id == "image.decompression_bomb"
+        assert indicators[0].rule.score > 0
+
+    def test_bomb_evidence_is_useful_even_without_dimensions(self) -> None:
+        """Quando a protecao aborta na abertura, as dimensoes nao chegam.
+
+        A evidencia precisa dizer algo util mesmo assim: a desproporcao entre
+        68 bytes e o limite de pixels ja conta a historia.
+        """
+        image = ImageAnalysis(decompression_bomb=True)
+
+        evidence = _image_indicators(image, file_size=68)[0].evidence
+
+        assert evidence["file_size_bytes"] == 68
+        assert evidence["pixel_limit"] > 0
+        assert "declared_width" not in evidence
+
+    def test_bomb_evidence_includes_dimensions_when_known(self) -> None:
+        image = ImageAnalysis(width=60_000, height=60_000, decompression_bomb=True)
+
+        evidence = _image_indicators(image, file_size=1024)[0].evidence
+
+        assert evidence["declared_width"] == 60_000
+        assert evidence["declared_megapixels"] == 3600.0
+
+    def test_an_ordinary_photo_raises_nothing(self) -> None:
+        """Nem EXIF ausente nem software de edicao viram indicador."""
+        image = ImageAnalysis(
+            width=4032,
+            height=3024,
+            image_format="JPEG",
+            software="Adobe Photoshop 25.1",
+        )
+
+        assert _image_indicators(image, file_size=191_388) == []
+
+    def test_non_image_evidence_raises_nothing(self) -> None:
+        assert _image_indicators(None, file_size=1024) == []
 
 
 class TestEvidenceIsAlwaysPresent:

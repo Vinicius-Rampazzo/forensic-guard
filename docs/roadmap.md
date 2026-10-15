@@ -16,10 +16,11 @@ branch é criada de antemão: quando a etapa fecha, ele commita, integra na
 
 | | |
 | --- | --- |
-| **Última etapa concluída** | Etapa 5 — Risk Engine |
-| **Próxima etapa** | Etapa 6 — Forense de imagem |
-| **Já funciona ponta a ponta** | `POST /analyze` devolve hashes, entropia, tipo detectado, mismatch, artefatos, **Risk Score e indicadores explicáveis**. Experimente em `/docs`. |
-| **Testes** | 194, todos passando |
+| **Última etapa concluída** | Etapa 7 — Forense de e-mail |
+| **Próxima etapa** | Etapa 8 — Frontend |
+| **Backend completo** | `POST /analyze` cobre arquivos, imagens e e-mails, com Risk Score e indicadores explicáveis. Experimente em `/docs`. |
+| **Frontend** | Parado na Etapa 1 — só a landing com o badge de status |
+| **Testes** | 263, todos passando |
 
 ---
 
@@ -106,31 +107,40 @@ decisão do Vinicius)*
 
 ---
 
-## Etapa 6 — Forense de imagem ⏳ próxima
+## Etapa 6 — Forense de imagem ✅
 
-- [ ] `analyzers/image_analyzer.py` com Pillow e exifread
-- [ ] Dimensões, formato, modo de cor
-- [ ] EXIF: dispositivo, modelo, software, timestamps
-- [ ] GPS com conversão para coordenadas decimais
-- [ ] Proteção contra *decompression bomb*
-- [ ] Testes com imagens com e sem EXIF
+Branch: `feat/image-email-forensics`
 
----
-
-## Etapa 7 — Forense de e-mail
-
-- [ ] `analyzers/email_analyzer.py` — parser `.eml`
-- [ ] Headers: From, To, Subject, Reply-To, Return-Path, Message-ID, Date
-- [ ] Cadeia de `Received`
-- [ ] `Authentication-Results`: SPF, DKIM, DMARC
-- [ ] Mismatch entre From, Reply-To e Return-Path
-- [ ] `analyzers/url_analyzer.py` — extração e heurísticas de URL
-- [ ] Anexos com recursão limitada (profundidade 2, máximo 20)
-- [ ] Testes com e-mail normal e e-mail suspeito
+- [x] `analyzers/image_analyzer.py` com Pillow *(exifread descartado — ver decisões)*
+- [x] Dimensões, megapixels, formato, modo de cor
+- [x] EXIF: dispositivo, modelo, software, timestamps, todas as tags legíveis
+- [x] GPS com conversão de graus/minutos/segundos para decimais
+- [x] Proteção contra *decompression bomb* — os pixels nunca são decodificados
+- [x] Limites de extração de EXIF (120 tags, 256 caracteres por valor)
+- [x] Indicadores: `image.decompression_bomb` (+25) e `image.gps_coordinates` (0, informativo)
+- [x] 31 testes novos (225 no total), com fixtures geradas pelo próprio Pillow
+- [x] `Pillow==12.3.0` no `requirements.txt` e README atualizado
 
 ---
 
-## Etapa 8 — Frontend do relatório
+## Etapa 7 — Forense de e-mail ✅
+
+Branch: `feat/image-email-forensics` *(etapas 6 e 7 na mesma branch)*
+
+- [x] `analyzers/email_analyzer.py` — parser `.eml` com a biblioteca `email` nativa
+- [x] Headers principais, já decodificados de MIME (assuntos com acentuação)
+- [x] Cadeia de `Received`
+- [x] `Authentication-Results`: SPF, DKIM, DMARC, com `Received-SPF` como alternativa
+- [x] Mismatch entre From, Reply-To e Return-Path
+- [x] Links do corpo HTML com detecção de **destino diferente do texto exibido**
+- [x] Anexos com análise recursiva (profundidade 2, máximo 20, 500 partes MIME)
+- [x] 7 regras de risco novas, incluindo anexo executável (+30)
+- [x] 38 testes novos (263 no total), com e-mail comum e phishing completo
+- [x] **Nenhuma dependência nova** — `email` e `html.parser` são da biblioteca padrão
+
+---
+
+## Etapa 8 — Frontend do relatório ⏳ próxima
 
 - [ ] `FileDropzone` com drag and drop
 - [ ] `AnalysisLoading`

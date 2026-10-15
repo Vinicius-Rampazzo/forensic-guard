@@ -5,14 +5,79 @@ verificam o JSON devolvido. Sao eles que provam que as pecas das Etapas 2 e 3
 estao realmente costuradas.
 """
 
+import io
+import struct
+import zlib
+from email.message import EmailMessage
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
+from PIL import ExifTags, Image
+from PIL.TiffImagePlugin import IFDRational
 
 PADDING = b"\x00" * 64
 
-PNG = b"\x89PNG\r\n\x1a\n" + PADDING
 PLAIN_TEXT = b"Relatorio trimestral. Nada de especial aqui.\n" * 4
+
+
+def _build_png() -> bytes:
+    """Gera um PNG valido de verdade, nao apenas a assinatura.
+
+    A analise de imagem precisa conseguir abrir o arquivo. Um cabecalho solto
+    seria reconhecido pela tabela de assinaturas, mas o Pillow recusaria - e o
+    teste estaria verificando a coisa errada.
+    """
+    buffer = io.BytesIO()
+    Image.new("RGB", (120, 90), (10, 20, 30)).save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+def _build_jpeg_with_gps() -> bytes:
+    """Gera um JPEG com EXIF de dispositivo e coordenadas GPS.
+
+    As coordenadas sao as do exemplo da especificacao: 22 graus 7 minutos 12
+    segundos Sul, 51 graus 23 minutos 24 segundos Oeste, que convertem para
+    -22.12 e -51.39.
+    """
+    image = Image.new("RGB", (640, 480), (40, 80, 120))
+    exif = image.getexif()
+    exif[ExifTags.Base.Make.value] = "Apple"
+    exif[ExifTags.Base.Model.value] = "iPhone 15 Pro"
+
+    gps = exif.get_ifd(ExifTags.IFD.GPSInfo)
+    gps[ExifTags.GPS.GPSLatitude.value] = (IFDRational(22), IFDRational(7), IFDRational(12))
+    gps[ExifTags.GPS.GPSLatitudeRef.value] = "S"
+    gps[ExifTags.GPS.GPSLongitude.value] = (IFDRational(51), IFDRational(23), IFDRational(24))
+    gps[ExifTags.GPS.GPSLongitudeRef.value] = "W"
+
+    buffer = io.BytesIO()
+    image.save(buffer, format="JPEG", exif=exif)
+    return buffer.getvalue()
+
+
+def _build_decompression_bomb() -> bytes:
+    """PNG minusculo cujo cabecalho declara 60.000 x 60.000 pixels.
+
+    Montado a mao porque nenhuma biblioteca gera de boa vontade um arquivo
+    cujo cabecalho mente sobre o conteudo.
+    """
+
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        body = kind + data
+        return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body))
+
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", struct.pack(">IIBBBBB", 60_000, 60_000, 8, 2, 0, 0, 0))
+        + chunk(b"IDAT", zlib.compress(b"\x00" * 16))
+        + chunk(b"IEND", b"")
+    )
+
+
+PNG = _build_png()
+JPEG_WITH_GPS = _build_jpeg_with_gps()
+DECOMPRESSION_BOMB = _build_decompression_bomb()
 
 # Bytes inofensivos com aparencia de dropper: comecam com a assinatura de
 # executavel Windows e carregam strings tipicas de script malicioso.
@@ -159,6 +224,182 @@ class TestRiskScore:
         risk = post_evidence(client, "invoice.jpg", FAKE_DROPPER).json()["risk"]
 
         assert 0 <= risk["score"] <= 100
+
+
+class TestImageAnalysis:
+    """A secao de imagem so aparece quando a evidencia e uma imagem."""
+
+    def test_image_section_is_present_for_images(self, client: TestClient) -> None:
+        payload = post_evidence(client, "grafico.png", PNG).json()
+
+        assert payload["image"] is not None
+        assert payload["image"]["image_format"] == "PNG"
+        assert payload["image"]["width"] == 120
+        assert payload["image"]["height"] == 90
+
+    def test_image_section_is_absent_for_other_evidence(self, client: TestClient) -> None:
+        """Campo ausente em vez de objeto cheio de nulos."""
+        payload = post_evidence(client, "notas.txt", PLAIN_TEXT).json()
+
+        assert payload["image"] is None
+
+    def test_exif_and_gps_reach_the_response(self, client: TestClient) -> None:
+        """Metadados da foto chegam ate o JSON, prontos para a interface."""
+        payload = post_evidence(client, "ferias.jpg", JPEG_WITH_GPS).json()
+
+        image = payload["image"]
+
+        assert image["device_make"] == "Apple"
+        assert image["device_model"] == "iPhone 15 Pro"
+        assert image["gps"]["latitude"] == pytest.approx(-22.12)
+        assert image["gps"]["longitude"] == pytest.approx(-51.39)
+
+    def test_gps_raises_an_informational_indicator(self, client: TestClient) -> None:
+        """Localizacao avisa sem pontuar: e privacidade, nao risco."""
+        payload = post_evidence(client, "ferias.jpg", JPEG_WITH_GPS).json()
+
+        gps_indicator = next(
+            item for item in payload["risk"]["indicators"] if item["id"] == "image.gps_coordinates"
+        )
+
+        assert gps_indicator["score"] == 0
+        assert gps_indicator["severity"] == "info"
+        assert payload["risk"]["level"] == "low"
+
+    def test_decompression_bomb_is_detected_safely(self, client: TestClient) -> None:
+        """Um arquivo de 68 bytes que declara 3,6 bilhoes de pixels.
+
+        O teste so termina porque a analise NUNCA decodifica os pixels. Se
+        decodificasse, tentaria alocar mais de 14 GB de memoria.
+        """
+        payload = post_evidence(client, "inofensiva.png", DECOMPRESSION_BOMB).json()
+
+        ids = [item["id"] for item in payload["risk"]["indicators"]]
+
+        assert "image.decompression_bomb" in ids
+
+
+def _build_phishing_email() -> bytes:
+    """Monta um phishing completo, com tudo o que a Etapa 7 reconhece.
+
+    Nada aqui e executavel de verdade: o anexo sao apenas os bytes `MZ`
+    seguidos de texto. O que importa e que ele se apresenta como PDF.
+    """
+    message = EmailMessage()
+    message["From"] = "Financeiro <financeiro@empresa.com>"
+    message["To"] = "vitima@empresa.com"
+    message["Subject"] = "Fatura em atraso - acao necessaria"
+    message["Date"] = "Mon, 15 Oct 2026 09:12:00 -0300"
+    message["Reply-To"] = "empresa-financeiro@gmail.com"
+    message["Return-Path"] = "<bounce@servidor-desconhecido.ru>"
+    message["Authentication-Results"] = (
+        "mx.empresa.com; spf=fail (sender IP is 203.0.113.9); "
+        "dkim=fail header.i=@empresa.com; dmarc=fail (p=REJECT)"
+    )
+
+    message.set_content("Segue a fatura em anexo. Regularize ate hoje.")
+    message.add_alternative(
+        '<p>Acesse <a href="http://203.0.113.45/login">www.empresa.com.br</a> '
+        "para regularizar.</p>",
+        subtype="html",
+    )
+
+    message.add_attachment(
+        b"MZ\x90\x00\x03\x00\x00\x00This program cannot be run in DOS mode.",
+        maintype="application",
+        subtype="pdf",
+        filename="fatura.pdf",
+    )
+
+    return message.as_bytes()
+
+
+PHISHING_EMAIL = _build_phishing_email()
+
+
+class TestEmailAnalysis:
+    """A secao de e-mail e a analise recursiva dos anexos."""
+
+    def test_email_section_is_present_for_emails(self, client: TestClient) -> None:
+        payload = post_evidence(client, "mensagem.eml", EMAIL).json()
+
+        assert payload["email"] is not None
+        assert payload["email"]["from_domain"] == "empresa.com"
+
+    def test_email_section_is_absent_for_other_evidence(self, client: TestClient) -> None:
+        assert post_evidence(client, "grafico.png", PNG).json()["email"] is None
+
+    def test_authentication_failures_become_indicators(self, client: TestClient) -> None:
+        payload = post_evidence(client, "phishing.eml", PHISHING_EMAIL).json()
+
+        ids = [item["id"] for item in payload["risk"]["indicators"]]
+
+        assert "email.spf_failed" in ids
+        assert "email.dkim_failed" in ids
+        assert "email.dmarc_failed" in ids
+
+    def test_sender_mismatches_become_indicators(self, client: TestClient) -> None:
+        payload = post_evidence(client, "phishing.eml", PHISHING_EMAIL).json()
+
+        ids = [item["id"] for item in payload["risk"]["indicators"]]
+
+        assert "email.reply_to_mismatch" in ids
+        assert "email.return_path_mismatch" in ids
+
+    def test_misleading_link_becomes_an_indicator(self, client: TestClient) -> None:
+        """O link mostra empresa.com.br e aponta para um IP."""
+        payload = post_evidence(client, "phishing.eml", PHISHING_EMAIL).json()
+
+        indicator = next(
+            item
+            for item in payload["risk"]["indicators"]
+            if item["id"] == "email.misleading_link"
+        )
+
+        assert indicator["evidence"]["links"][0]["displayed"] == "www.empresa.com.br"
+        assert "203.0.113.45" in indicator["evidence"]["links"][0]["destination"]
+
+    def test_attachment_is_analysed_recursively(self, client: TestClient) -> None:
+        """O anexo passa pelo mesmo pipeline do arquivo principal.
+
+        Um `fatura.pdf` cujos bytes comecam com `MZ` recebe a sua propria
+        nota, dentro do relatorio do e-mail.
+        """
+        payload = post_evidence(client, "phishing.eml", PHISHING_EMAIL).json()
+
+        attachment = payload["email"]["attachments"][0]
+
+        assert attachment["filename"] == "fatura.pdf"
+        assert attachment["declared_content_type"] == "application/pdf"
+        assert attachment["analysis"] is not None
+        assert attachment["analysis"]["detection"]["mismatch"] == "executable_disguised"
+        assert attachment["analysis"]["risk"]["level"] == "critical"
+
+    def test_executable_attachment_raises_an_indicator_on_the_message(
+        self, client: TestClient
+    ) -> None:
+        """O e-mail carrega a culpa do anexo, alem do anexo ter a sua."""
+        payload = post_evidence(client, "phishing.eml", PHISHING_EMAIL).json()
+
+        indicator = next(
+            item
+            for item in payload["risk"]["indicators"]
+            if item["id"] == "email.executable_attachment"
+        )
+
+        assert indicator["evidence"]["attachments"] == ["fatura.pdf"]
+
+    def test_the_whole_message_scores_critical(self, client: TestClient) -> None:
+        payload = post_evidence(client, "phishing.eml", PHISHING_EMAIL).json()
+
+        assert payload["risk"]["level"] == "critical"
+
+    def test_an_ordinary_email_scores_low(self, client: TestClient) -> None:
+        """O contraponto: mensagem comum nao pode gerar alarme."""
+        payload = post_evidence(client, "mensagem.eml", EMAIL).json()
+
+        assert payload["risk"]["score"] == 0
+        assert payload["risk"]["level"] == "low"
 
 
 class TestEvidenceRouting:

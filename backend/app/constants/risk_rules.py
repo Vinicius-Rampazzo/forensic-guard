@@ -155,8 +155,138 @@ URL_WITH_PUNYCODE = RiskRule(
 
 
 # ---------------------------------------------------------------------------
+# Regras de e-mail
+#
+# Os pesos seguem a especificacao. Note que SPF e DMARC pesam mais que DKIM:
+# os dois primeiros verificam se o servidor tinha autorizacao para enviar em
+# nome daquele dominio, enquanto o DKIM falha com frequencia por motivos
+# inocentes - listas de discussao e encaminhamentos quebram a assinatura ao
+# alterar o corpo da mensagem.
+# ---------------------------------------------------------------------------
+
+SPF_FAILED = RiskRule(
+    id="email.spf_failed",
+    title="SPF verification failed",
+    description=(
+        "The receiving server reported that the sending machine was not "
+        "authorised to send mail for the claimed domain. SPF is one of the "
+        "few parts of an email that the sender cannot forge."
+    ),
+    severity=Severity.HIGH,
+    score=15,
+)
+
+DKIM_FAILED = RiskRule(
+    id="email.dkim_failed",
+    title="DKIM signature failed",
+    description=(
+        "The cryptographic signature covering the message did not verify. "
+        "This often happens for innocent reasons: mailing lists and "
+        "forwarding rewrite the body and break the signature."
+    ),
+    severity=Severity.MEDIUM,
+    score=10,
+)
+
+DMARC_FAILED = RiskRule(
+    id="email.dmarc_failed",
+    title="DMARC policy evaluation failed",
+    description=(
+        "The domain owner published a policy stating how to treat messages "
+        "that fail authentication, and this message failed it. DMARC builds "
+        "on SPF and DKIM, so this usually accompanies one of them."
+    ),
+    severity=Severity.HIGH,
+    score=15,
+)
+
+REPLY_TO_MISMATCH = RiskRule(
+    id="email.reply_to_mismatch",
+    title="Reply-To points to a different domain than the sender",
+    description=(
+        "Answering this message would send the reply somewhere other than "
+        "the apparent sender's domain. It is a common way to collect "
+        "responses while appearing to be a known organisation — although "
+        "newsletters and ticketing systems legitimately do the same."
+    ),
+    severity=Severity.MEDIUM,
+    score=10,
+)
+
+RETURN_PATH_MISMATCH = RiskRule(
+    id="email.return_path_mismatch",
+    title="Return-Path differs from the sender domain",
+    description=(
+        "Bounces for this message would go to a different domain than the "
+        "one it claims to come from. Marketing platforms and mailing lists "
+        "do this routinely, so on its own the finding is weak."
+    ),
+    severity=Severity.LOW,
+    score=10,
+)
+
+MISLEADING_LINK = RiskRule(
+    id="email.misleading_link",
+    title="Link text does not match its destination",
+    description=(
+        "A link displays one address and points to another. Reading the "
+        "message, the recipient sees a familiar domain; clicking takes them "
+        "somewhere else. This is the defining technique of phishing."
+    ),
+    severity=Severity.HIGH,
+    score=20,
+)
+
+EXECUTABLE_ATTACHMENT = RiskRule(
+    id="email.executable_attachment",
+    title="Message carries an executable attachment",
+    description=(
+        "One of the attachments is an executable program or a script. "
+        "Legitimate correspondence almost never sends one, and most mail "
+        "providers block them precisely for this reason."
+    ),
+    severity=Severity.CRITICAL,
+    score=30,
+)
+
+
+# ---------------------------------------------------------------------------
+# Regras de imagem
+# ---------------------------------------------------------------------------
+
+DECOMPRESSION_BOMB = RiskRule(
+    id="image.decompression_bomb",
+    title="Image declares an implausible number of pixels",
+    description=(
+        "The image header declares dimensions far beyond any real camera. "
+        "Decoding it would require enormous amounts of memory, which is the "
+        "point of a decompression bomb: a small file that exhausts the "
+        "resources of whatever opens it. ForensicGuard never decodes the "
+        "pixels, so the file was inspected safely."
+    ),
+    severity=Severity.HIGH,
+    score=25,
+)
+
+
+# ---------------------------------------------------------------------------
 # Regras informativas
 # ---------------------------------------------------------------------------
+
+GPS_COORDINATES = RiskRule(
+    id="image.gps_coordinates",
+    title="Image contains GPS coordinates",
+    description=(
+        "The image carries the location where it was taken. This is a "
+        "privacy matter, not a security one: people are often unaware that "
+        "sharing a photo also shares where they live or work."
+    ),
+    # Zero ponto. Localizacao embutida nao torna a evidencia perigosa - torna
+    # a pessoa que a enviou exposta. O indicador existe para avisar, nunca
+    # para acusar.
+    severity=Severity.INFO,
+    score=0,
+)
 
 ANALYSIS_TRUNCATED = RiskRule(
     id="analysis.truncated",
@@ -176,10 +306,6 @@ ANALYSIS_TRUNCATED = RiskRule(
 
 # Todas as regras existentes. Serve a testes de integridade e a quem quiser
 # consultar a tabela inteira.
-#
-# As regras de e-mail (SPF, DKIM, DMARC, Reply-To, Return-Path) e a de anexo
-# executavel chegam junto com o analisador de e-mail, na etapa que produzir
-# esses dados. Nao adianta definir peso para algo que nada emite.
 RISK_RULES: tuple[RiskRule, ...] = (
     EXECUTABLE_DISGUISED,
     EXTENSION_MISMATCH,
@@ -187,6 +313,15 @@ RISK_RULES: tuple[RiskRule, ...] = (
     SUSPICIOUS_COMMAND,
     URL_WITH_IP_HOST,
     URL_WITH_PUNYCODE,
+    SPF_FAILED,
+    DKIM_FAILED,
+    DMARC_FAILED,
+    REPLY_TO_MISMATCH,
+    RETURN_PATH_MISMATCH,
+    MISLEADING_LINK,
+    EXECUTABLE_ATTACHMENT,
+    DECOMPRESSION_BOMB,
+    GPS_COORDINATES,
     ANALYSIS_TRUNCATED,
 )
 
