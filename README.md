@@ -276,10 +276,27 @@ found inside it:
 }
 ```
 
-Uploads above the configured limit (25 MB by default) are rejected with
-`413`. The evidence is written to a temporary file with an internally
-generated name and deleted as soon as the analysis finishes — including when
-it fails.
+The evidence is written to a temporary file with an internally generated name
+and deleted as soon as the analysis finishes — including when it fails.
+
+### Size limits
+
+| Limit | Default | Why |
+| --- | --- | --- |
+| Upload | 1 GB | Hashing, entropy and type detection read in 64 KB blocks, so memory stays flat regardless of file size. |
+| Email parsing | 64 MB | The only part that needs the whole file in memory: the parser builds the full MIME tree before anything can be read from it. |
+| String scanning | 8 MB | Strings worth reading appear near the beginning. The result reports when it was truncated. |
+| Attachment | 10 MB each, 20 max, depth 2 | Keeps a nested message from expanding without bound. |
+
+Change the upload limit in `backend/.env`:
+
+```ini
+MAX_UPLOAD_SIZE=1073741824
+```
+
+Oversized uploads are rejected with `413`, and the interface checks the size
+before sending so you get both numbers — the file's and the limit's — instead
+of a vague failure.
 
 ---
 

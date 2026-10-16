@@ -288,13 +288,14 @@ GPS_COORDINATES = RiskRule(
     score=0,
 )
 
-ANALYSIS_TRUNCATED = RiskRule(
-    id="analysis.truncated",
-    title="Analysis was truncated",
+STRINGS_LISTING_TRUNCATED = RiskRule(
+    id="strings.listing_truncated",
+    title="String listing is partial",
     description=(
-        "A safety limit stopped the analysis before the whole file was "
-        "examined. The report is partial and absence of findings must not be "
-        "read as absence of content."
+        "A safety limit stopped the string extraction early. Hashes, entropy "
+        "and type detection still cover the whole file, and the artifacts "
+        "below are complete — only the raw list of readable text is cut "
+        "short. A string missing from that list may still be in the file."
     ),
     # Pontuacao zero de proposito. O indicador existe para ser honesto sobre o
     # alcance da analise, e nao para pesar contra o arquivo: um arquivo grande
@@ -322,7 +323,7 @@ RISK_RULES: tuple[RiskRule, ...] = (
     EXECUTABLE_ATTACHMENT,
     DECOMPRESSION_BOMB,
     GPS_COORDINATES,
-    ANALYSIS_TRUNCATED,
+    STRINGS_LISTING_TRUNCATED,
 )
 
 

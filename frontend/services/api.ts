@@ -7,6 +7,7 @@
  * editar, em vez de dez componentes.
  */
 
+import type { AnalysisResult } from "@/types/analysis";
 import type { HealthResponse } from "@/types/api";
 
 /**
@@ -65,4 +66,75 @@ export async function getHealth(signal?: AbortSignal): Promise<HealthResponse> {
   }
 
   return (await response.json()) as HealthResponse;
+}
+
+/**
+ * Envia uma evidencia para analise.
+ *
+ * O arquivo vai como multipart/form-data, no campo `file` - o mesmo nome que
+ * a rota declara. Repare que NAO definimos o cabecalho Content-Type: o
+ * navegador precisa gera-lo sozinho, porque ele inclui o delimitador
+ * (boundary) que separa as partes do corpo. Defini-lo a mao e um erro
+ * classico, e quebra o upload com uma mensagem confusa.
+ *
+ * @param file arquivo escolhido pelo usuario.
+ * @param signal permite cancelar o envio.
+ */
+export async function analyzeEvidence(
+  file: File,
+  signal?: AbortSignal,
+): Promise<AnalysisResult> {
+  const body = new FormData();
+  body.append("file", file);
+
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}/analyze`, {
+      method: "POST",
+      body,
+      signal,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw error;
+    }
+    throw new ApiError("Could not reach the API");
+  }
+
+  if (!response.ok) {
+    throw new ApiError(await describeFailure(response), response.status);
+  }
+
+  return (await response.json()) as AnalysisResult;
+}
+
+/**
+ * Traduz uma resposta de erro da API em uma mensagem para o usuario.
+ *
+ * A mensagem do SERVIDOR vem primeiro, sempre. O FastAPI devolve o motivo em
+ * `detail`, e no caso do limite de upload esse texto carrega o numero exato de
+ * bytes aceitos - informacao que uma mensagem generica joga fora.
+ *
+ * Essa ordem foi aprendida na pratica: a primeira versao substituia o `detail`
+ * por um texto fixo para o erro 413, e o resultado foi um usuario diante de
+ * "arquivo grande demais" sem saber nem qual e o limite nem o tamanho do
+ * proprio arquivo - impossivel de diagnosticar.
+ */
+async function describeFailure(response: Response): Promise<string> {
+  try {
+    const payload = (await response.json()) as { detail?: unknown };
+
+    if (typeof payload.detail === "string" && payload.detail.trim()) {
+      return payload.detail;
+    }
+  } catch {
+    // Corpo vazio ou nao-JSON: segue para a mensagem generica.
+  }
+
+  if (response.status === 413) {
+    return "File exceeds the upload limit configured on the server.";
+  }
+
+  return `Analysis failed with status ${response.status}.`;
 }

@@ -16,11 +16,10 @@ branch é criada de antemão: quando a etapa fecha, ele commita, integra na
 
 | | |
 | --- | --- |
-| **Última etapa concluída** | Etapa 7 — Forense de e-mail |
-| **Próxima etapa** | Etapa 8 — Frontend |
-| **Backend completo** | `POST /analyze` cobre arquivos, imagens e e-mails, com Risk Score e indicadores explicáveis. Experimente em `/docs`. |
-| **Frontend** | Parado na Etapa 1 — só a landing com o badge de status |
-| **Testes** | 263, todos passando |
+| **Última etapa concluída** | Etapa 8 — Frontend do relatório |
+| **Próxima etapa** | Etapa 9 — Export JSON/HTML e documentação final |
+| **Funciona ponta a ponta** | Arraste um arquivo em http://localhost:3000 e veja o relatório completo. |
+| **Testes** | 263 no backend, todos passando |
 
 ---
 
@@ -140,22 +139,30 @@ Branch: `feat/image-email-forensics` *(etapas 6 e 7 na mesma branch)*
 
 ---
 
-## Etapa 8 — Frontend do relatório ⏳ próxima
+## Etapa 8 — Frontend do relatório ✅
 
-- [ ] `FileDropzone` com drag and drop
-- [ ] `AnalysisLoading`
-- [ ] `RiskScore` e `RiskBadge`
-- [ ] `FileOverview`, `HashCard`, `MetadataCard`
-- [ ] `ExifCard`
-- [ ] `IndicatorsList`
-- [ ] `EmailHeaders`, `AttachmentList`, `UrlList`
-- [ ] `types/analysis.ts` espelhando os schemas Pydantic
-- [ ] Abas variando conforme o tipo de evidência
-- [ ] Tratamento visual de erro
+Branch: `feat/frontend-report`
+
+- [x] `types/analysis.ts` espelhando os schemas Pydantic, escrito à mão
+- [x] `services/api.ts` com `analyzeEvidence` via `FormData`
+- [x] `FileDropzone` — drag and drop nativo, sem biblioteca
+- [x] `AnalysisLoading`, `RiskScore`, `Badge`
+- [x] `FileOverview` com detecção de tipo e força da evidência
+- [x] `HashCard` com botão de copiar
+- [x] `ExifCard` com EXIF, GPS e link para o mapa
+- [x] `EmailHeaders` com autenticação e cadeia de `Received`
+- [x] `UrlList` destacando links enganosos — URLs nunca clicáveis
+- [x] `AttachmentList` com o risco próprio de cada anexo
+- [x] `IndicatorsList` com a evidência de cada indicador
+- [x] `StringsPanel`, `Tabs`, `Card` e `Badge` como primitivas reaproveitadas
+- [x] Abas montadas a partir do que a resposta traz, não de estrutura fixa
+- [x] Quatro estados na página: idle, analysing, done, failed
+- [x] Página única — sem persistência, um relatório não tem endereço próprio
+- [x] **Nenhuma dependência nova no frontend**
 
 ---
 
-## Etapa 9 — Relatórios e documentação
+## Etapa 9 — Relatórios e documentação ⏳ próxima
 
 - [ ] Export JSON
 - [ ] Relatório HTML standalone

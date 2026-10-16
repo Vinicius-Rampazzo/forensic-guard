@@ -54,13 +54,13 @@ class TestScoreCalculation:
         assert calculate_score(many) == MAXIMUM_RISK_SCORE
 
     def test_informational_indicators_do_not_add_points(self) -> None:
-        """Aviso de analise truncada e honestidade, nao acusacao.
+        """Aviso de listagem parcial e honestidade, nao acusacao.
 
         Um arquivo grande nao e mais perigoso por ser grande.
         """
-        from app.constants.risk_rules import ANALYSIS_TRUNCATED
+        from app.constants.risk_rules import STRINGS_LISTING_TRUNCATED
 
-        assert calculate_score([indicator(ANALYSIS_TRUNCATED)]) == 0
+        assert calculate_score([indicator(STRINGS_LISTING_TRUNCATED)]) == 0
 
 
 class TestClassification:

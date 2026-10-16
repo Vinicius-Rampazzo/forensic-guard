@@ -1,122 +1,231 @@
 /**
- * Landing do ForensicGuard.
+ * Pagina unica do ForensicGuard.
  *
- * Nesta etapa a pagina prova apenas uma coisa: o frontend fala com o backend.
- * O dropzone de upload e o relatorio entram na etapa de interface.
+ * Quatro estados, um de cada vez:
  *
- * `"use client"` marca este arquivo como Client Component. Por padrao, no App
- * Router, todo componente e Server Component: renderiza no servidor e chega ao
- * navegador como HTML pronto, sem JavaScript. Isso e otimo para conteudo
- * estatico, mas impede useState, useEffect e qualquer interatividade.
+ *   idle      -> area de upload
+ *   analysing -> indicador de progresso
+ *   done      -> relatorio
+ *   failed    -> mensagem de erro e caminho de volta
  *
- * Aqui precisamos de estado (checking -> online/offline) e de um efeito que
- * roda no navegador, entao o componente precisa ser de cliente.
+ * Nao ha rota /report porque nao ha persistencia: sem banco, um relatorio nao
+ * tem endereco proprio. Criar /report/:id seria prometer um link que nao
+ * funcionaria se alguem o compartilhasse.
  */
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { getHealth } from "@/services/api";
+import { AnalysisLoading } from "@/components/AnalysisLoading";
+import { AnalysisReport } from "@/components/AnalysisReport";
+import { FileDropzone } from "@/components/FileDropzone";
+import { formatBytes } from "@/components/FileOverview";
+import { analyzeEvidence, getHealth } from "@/services/api";
+import type { AnalysisResult } from "@/types/analysis";
 
-/**
- * Os tres estados obrigatorios de qualquer chamada de rede.
- *
- * Ignorar "checking" produz um piscar de conteudo errado; ignorar "offline"
- * produz uma tela em branco sem explicacao. Este mesmo padrao se repete no
- * upload de evidencias mais adiante.
- */
 type ApiStatus = "checking" | "online" | "offline";
 
-const STATUS_LABEL: Record<ApiStatus, string> = {
-  checking: "Checking API...",
-  online: "API online",
-  offline: "API offline",
-};
+type Screen =
+  | { state: "idle" }
+  | { state: "analysing"; filename: string }
+  | { state: "done"; result: AnalysisResult }
+  | { state: "failed"; message: string };
 
-const STATUS_STYLE: Record<ApiStatus, string> = {
-  checking: "border-zinc-500/40 bg-zinc-500/10 text-zinc-400",
-  online: "border-emerald-500/40 bg-emerald-500/10 text-emerald-400",
-  offline: "border-red-500/40 bg-red-500/10 text-red-400",
-};
+export default function Home() {
+  const [screen, setScreen] = useState<Screen>({ state: "idle" });
+  const [apiStatus, setApiStatus] = useState<ApiStatus>("checking");
 
-function ApiStatusBadge() {
-  const [status, setStatus] = useState<ApiStatus>("checking");
-  const [version, setVersion] = useState<string | null>(null);
+  // Limite de upload informado pelo backend. Null enquanto a checagem de
+  // saude nao respondeu - nesse caso nao ha como validar antes, e o servidor
+  // continua sendo a ultima palavra.
+  const [uploadLimit, setUploadLimit] = useState<number | null>(null);
+
+  // Guarda o controlador do envio em andamento para poder cancelar quando o
+  // componente sair da tela. useRef porque trocar este valor nao deve
+  // provocar uma nova renderizacao.
+  const requestRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    // O AbortController cancela a requisicao se o componente sair da tela
-    // antes da resposta chegar - evita atualizar o estado de algo que ja
-    // nao existe mais.
     const controller = new AbortController();
 
     getHealth(controller.signal)
       .then((health) => {
-        setStatus("online");
-        setVersion(health.version);
+        setApiStatus("online");
+        setUploadLimit(health.max_upload_size);
       })
       .catch((error: unknown) => {
-        // Cancelamento nao e falha: nao deve pintar a tela de vermelho.
         if (error instanceof Error && error.name === "AbortError") return;
-        setStatus("offline");
+        setApiStatus("offline");
       });
 
     return () => controller.abort();
   }, []);
 
+  useEffect(() => {
+    // Cancela um envio em andamento se a pagina for desmontada.
+    return () => requestRef.current?.abort();
+  }, []);
+
+  async function handleFile(file: File) {
+    // Verificacao do tamanho ANTES de enviar.
+    //
+    // O navegador ja conhece o tamanho do arquivo, entao mandar 300 MB pela
+    // rede so para receber um 413 e desperdicio - e a mensagem de erro fica
+    // mais util quando diz os DOIS numeros, o do arquivo e o do limite.
+    //
+    // Isto nao substitui a verificacao do servidor: um cliente qualquer pode
+    // ignorar esta checagem. Validacao no cliente e conveniencia; a do
+    // servidor e que e seguranca.
+    if (uploadLimit !== null && file.size > uploadLimit) {
+      setScreen({
+        state: "failed",
+        message:
+          `This file is ${formatBytes(file.size)}, and the server accepts up to ` +
+          `${formatBytes(uploadLimit)}. The limit is configurable in ` +
+          `backend/.env via MAX_UPLOAD_SIZE.`,
+      });
+      return;
+    }
+
+    requestRef.current?.abort();
+
+    const controller = new AbortController();
+    requestRef.current = controller;
+
+    setScreen({ state: "analysing", filename: file.name });
+
+    try {
+      const result = await analyzeEvidence(file, controller.signal);
+      setScreen({ state: "done", result });
+    } catch (error) {
+      // Cancelamento nao e falha e nao deve virar tela de erro.
+      if (error instanceof Error && error.name === "AbortError") return;
+
+      setScreen({
+        state: "failed",
+        message: error instanceof Error ? error.message : "Analysis failed.",
+      });
+    }
+  }
+
   return (
-    <div
-      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium ${STATUS_STYLE[status]}`}
-    >
-      <span className="relative flex h-2 w-2">
-        {status === "checking" && (
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-60" />
-        )}
-        <span className="relative inline-flex h-2 w-2 rounded-full bg-current" />
-      </span>
-      {STATUS_LABEL[status]}
-      {version && <span className="opacity-60">v{version}</span>}
+    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-6 py-12">
+      <Header apiStatus={apiStatus} showReset={screen.state !== "idle"} onReset={() => setScreen({ state: "idle" })} />
+
+      {screen.state === "idle" && (
+        <FileDropzone
+          onFileSelected={handleFile}
+          disabled={apiStatus === "offline"}
+          uploadLimit={uploadLimit}
+        />
+      )}
+
+      {screen.state === "analysing" && <AnalysisLoading filename={screen.filename} />}
+
+      {screen.state === "done" && <AnalysisReport result={screen.result} />}
+
+      {screen.state === "failed" && (
+        <FailureNotice
+          message={screen.message}
+          onRetry={() => setScreen({ state: "idle" })}
+        />
+      )}
+
+      {apiStatus === "offline" && screen.state === "idle" && (
+        <p className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 text-sm text-amber-600 dark:text-amber-400">
+          The backend is not responding. Start it with{" "}
+          <code className="font-mono">python backend/dev.py</code> and reload this page.
+        </p>
+      )}
+
+      <Footer />
+    </main>
+  );
+}
+
+function Header({
+  apiStatus,
+  showReset,
+  onReset,
+}: {
+  apiStatus: ApiStatus;
+  showReset: boolean;
+  onReset: () => void;
+}) {
+  const statusStyle = {
+    checking: "border-zinc-500/40 bg-zinc-500/10 text-zinc-500",
+    online: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+    offline: "border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400",
+  }[apiStatus];
+
+  const statusLabel = {
+    checking: "checking API",
+    online: "API online",
+    offline: "API offline",
+  }[apiStatus];
+
+  return (
+    <header className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-semibold tracking-tight">ForensicGuard</h1>
+
+        <div className="flex items-center gap-3">
+          {showReset && (
+            <button
+              type="button"
+              onClick={onReset}
+              className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium transition-colors hover:border-zinc-500 dark:border-zinc-700"
+            >
+              Analyse another file
+            </button>
+          )}
+
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${statusStyle}`}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+            {statusLabel}
+          </span>
+        </div>
+      </div>
+
+      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        Lightweight digital evidence analyzer. Files are removed after
+        processing — nothing is stored.
+      </p>
+    </header>
+  );
+}
+
+function FailureNotice({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="flex flex-col items-start gap-3 rounded-lg border border-red-500/40 bg-red-500/5 p-5">
+      <h2 className="text-sm font-semibold text-red-600 dark:text-red-400">
+        Analysis failed
+      </h2>
+      <p className="text-sm text-zinc-600 dark:text-zinc-400">{message}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium transition-colors hover:border-zinc-500 dark:border-zinc-700"
+      >
+        Try another file
+      </button>
     </div>
   );
 }
 
-const SUPPORTED_FORMATS = ["JPG", "PNG", "PDF", "EML", "DOCX", "EXE"];
-
-export default function Home() {
+function Footer() {
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-10 px-6 py-16">
-      <header className="flex flex-col gap-4">
-        <ApiStatusBadge />
-
-        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">ForensicGuard</h1>
-
-        <p className="text-lg text-zinc-500 dark:text-zinc-400">
-          Lightweight digital evidence analyzer. Inspect files, images and emails for suspicious
-          indicators, metadata anomalies and potential security threats.
-        </p>
-      </header>
-
-      <section
-        aria-label="Evidence upload"
-        className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-zinc-300 px-6 py-14 text-center dark:border-zinc-700"
-      >
-        <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-          Evidence upload arrives in the next stage
-        </p>
-        <p className="font-mono text-xs text-zinc-400 dark:text-zinc-600">
-          {SUPPORTED_FORMATS.join(" • ")}
-        </p>
-      </section>
-
-      <footer className="flex flex-col gap-2 text-xs text-zinc-400 dark:text-zinc-600">
-        <p className="font-medium">
-          Privacy first — no database, no account, no permanent evidence storage.
-        </p>
-        <p>
-          The ForensicGuard risk score is based on static indicators and heuristics. It does not
-          provide a definitive malware or phishing verdict.
-        </p>
-      </footer>
-    </main>
+    <footer className="mt-auto flex flex-col gap-1 border-t border-zinc-100 pt-6 text-xs text-zinc-400 dark:border-zinc-900 dark:text-zinc-600">
+      <p className="font-medium">
+        Privacy first — no database, no account, no permanent evidence storage.
+      </p>
+      <p>
+        Static triage based on indicators and heuristics. Not a definitive
+        malware or phishing verdict.
+      </p>
+    </footer>
   );
 }

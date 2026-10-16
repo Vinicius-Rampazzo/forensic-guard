@@ -33,4 +33,5 @@ def health(settings: Annotated[Settings, Depends(get_settings)]) -> HealthRespon
         status="ok",
         app=settings.app_name,
         version=settings.version,
+        max_upload_size=settings.max_upload_size,
     )
