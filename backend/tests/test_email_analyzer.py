@@ -363,6 +363,31 @@ class TestHostileInput:
     def test_missing_file_returns_an_error(self, tmp_path: Path) -> None:
         assert analyze_email(tmp_path / "nao-existe.eml").error is not None
 
+    def test_oversized_message_is_refused_before_parsing(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """O teto existe porque o parser carrega a mensagem inteira na memoria.
+
+        E o unico ponto do projeto que nao le em blocos. Com o limite geral de
+        upload em 1 GB, sem este teto um unico `.eml` consumiria essa memoria
+        toda - e duas analises simultaneas derrubariam o servico.
+
+        A verificacao acontece ANTES de abrir o arquivo: depois que o parser
+        comeca, a memoria ja foi comprometida.
+        """
+        from app.analyzers import email_analyzer
+
+        monkeypatch.setattr(email_analyzer, "MAX_EMAIL_BYTES", 100)
+
+        path = write_eml(tmp_path / "grande.eml", "From: a@b.com\r\n\r\n" + "x" * 500)
+
+        result = analyze_email(path)
+
+        assert result.error is not None
+        assert "limit for message parsing" in result.error
+        # Nada foi parseado: a recusa aconteceu antes.
+        assert result.from_address is None
+
     def test_unknown_charset_does_not_break_decoding(self, tmp_path: Path) -> None:
         """Charset inventado e caso comum em mensagem forjada."""
         raw = (

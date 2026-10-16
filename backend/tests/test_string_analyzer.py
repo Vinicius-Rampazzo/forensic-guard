@@ -9,6 +9,7 @@ from pathlib import Path
 
 from app.analyzers.string_analyzer import (
     MAX_SCAN_BYTES,
+    MAX_STRINGS,
     analyze_strings,
     extract_artifacts,
     extract_ascii_strings,
@@ -218,3 +219,52 @@ class TestSafetyLimits:
         evidence.write_bytes(b"A" * MAX_SCAN_BYTES)
 
         assert not analyze_strings(evidence).truncated
+
+    def test_total_reports_the_real_count_not_the_limit(self, tmp_path: Path) -> None:
+        """O total e contado ANTES do corte.
+
+        Este teste existe por causa de um defeito real: a primeira versao
+        cortava a lista e depois media a lista ja cortada. O resultado era um
+        relatorio afirmando que todo arquivo grande tem exatamente 5.000
+        strings - o proprio limite, apresentado como se fosse o total.
+        """
+        evidence = tmp_path / "muitas.bin"
+        wanted = MAX_STRINGS + 250
+        evidence.write_bytes(b"".join(f"string-numero-{i}\x00".encode() for i in range(wanted)))
+
+        result = analyze_strings(evidence)
+
+        assert result.total_found == wanted
+        assert len(result.strings) == MAX_STRINGS
+        assert result.count_truncated is True
+        assert result.scan_truncated is False
+
+    def test_the_two_limits_are_reported_separately(self, tmp_path: Path) -> None:
+        """Saber QUAL limite foi atingido muda a leitura do relatorio.
+
+        "faltou arquivo" e "faltou lista" sao problemas diferentes.
+        """
+        evidence = tmp_path / "grande.bin"
+        evidence.write_bytes(b"A" * (MAX_SCAN_BYTES + 1024))
+
+        result = analyze_strings(evidence)
+
+        assert result.scan_truncated is True
+        assert result.count_truncated is False
+        assert result.truncated is True
+
+    def test_artifacts_come_from_the_full_list_not_the_cut_one(self, tmp_path: Path) -> None:
+        """Uma URL na posicao 6.000 continua sendo uma URL.
+
+        Os artefatos sao o que tem valor forense; perde-los por causa de um
+        limite de EXIBICAO seria perder exatamente o que importa.
+        """
+        filler = b"".join(f"ruido-numero-{i}\x00".encode() for i in range(MAX_STRINGS + 500))
+        evidence = tmp_path / "escondida.bin"
+        evidence.write_bytes(filler + b"https://malicious.example.com/stage2.bin\x00")
+
+        result = analyze_strings(evidence)
+
+        assert result.count_truncated is True
+        # A URL esta depois do corte da lista, mas foi reconhecida mesmo assim.
+        assert "https://malicious.example.com/stage2.bin" in result.artifacts["urls"]

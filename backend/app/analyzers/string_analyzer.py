@@ -52,7 +52,19 @@ MIN_STRING_LENGTH = 4
 MAX_SCAN_BYTES = 8 * 1024 * 1024
 
 # Quantidade maxima de strings devolvidas.
-MAX_STRINGS = 5_000
+#
+# O valor e alto de proposito. Uma lista de 200 strings tiradas de 48.000 nao
+# serve para nada: quem analisa nao escolheu aquelas 200, e procurar algo
+# especifico nelas e sorte. Devolvendo quase tudo, a interface pode oferecer
+# busca - e ai a lista deixa de ser enfeite e vira ferramenta.
+#
+# Custo real: 50.000 strings ocupam cerca de 1,5 MB no JSON. Aceitavel numa
+# ferramenta que roda na maquina do proprio usuario.
+#
+# Repare que subir este numero NAO aumenta o pico de memoria da analise: a
+# extracao ja monta a lista completa antes de cortar, e quem limita o trabalho
+# de verdade e o MAX_SCAN_BYTES acima.
+MAX_STRINGS = 50_000
 
 # Quantidade maxima de artefatos por categoria.
 MAX_ARTIFACTS_PER_CATEGORY = 200
@@ -120,17 +132,29 @@ class StringAnalysis:
     """Resultado da analise de strings de uma evidencia.
 
     Attributes:
-        strings: sequencias legiveis encontradas, sem repeticao.
-        artifacts: artefatos por categoria (urls, ipv4, emails, ...).
-        truncated: True se algum limite de seguranca cortou o resultado, o que
-            significa que a analise e parcial. Informar isso e importante: um
-            relatorio forense nao pode dar a entender que examinou tudo quando
-            examinou parte.
+        strings: sequencias legiveis devolvidas, sem repeticao. Pode ser um
+            recorte de `total_found`.
+        artifacts: artefatos por categoria (urls, ipv4, emails, ...). Estes
+            NUNCA sao cortados pelo limite de quantidade: sao o que tem valor
+            forense, enquanto a lista crua e apenas contexto.
+        total_found: quantas strings distintas existiam de fato no trecho
+            lido. Contado ANTES do corte - informar o tamanho da lista ja
+            cortada seria reportar o proprio limite como se fosse o total.
+        scan_truncated: True quando o arquivo e maior que MAX_SCAN_BYTES e
+            apenas o inicio foi lido.
+        count_truncated: True quando havia mais strings que MAX_STRINGS.
     """
 
     strings: list[str] = field(default_factory=list)
     artifacts: dict[str, list[str]] = field(default_factory=dict)
-    truncated: bool = False
+    total_found: int = 0
+    scan_truncated: bool = False
+    count_truncated: bool = False
+
+    @property
+    def truncated(self) -> bool:
+        """True quando qualquer um dos limites cortou o resultado."""
+        return self.scan_truncated or self.count_truncated
 
 
 # ---------------------------------------------------------------------------
@@ -265,18 +289,28 @@ def analyze_strings(path: Path, min_length: int = MIN_STRING_LENGTH) -> StringAn
         # reportado como truncado.
         data = stream.read(MAX_SCAN_BYTES + 1)
 
-    truncated = len(data) > MAX_SCAN_BYTES
+    scan_truncated = len(data) > MAX_SCAN_BYTES
     data = data[:MAX_SCAN_BYTES]
 
     strings = extract_strings(data, min_length)
-    if len(strings) > MAX_STRINGS:
-        strings = strings[:MAX_STRINGS]
-        truncated = True
+
+    # Conta ANTES de cortar. Medir a lista ja cortada devolveria sempre o
+    # proprio limite, fazendo o relatorio afirmar que o arquivo tem exatamente
+    # 5.000 strings - um numero inventado.
+    total_found = len(strings)
+    count_truncated = total_found > MAX_STRINGS
+
+    # Os artefatos saem da lista COMPLETA, nao do recorte. Uma URL que aparece
+    # na posicao 8.000 continua sendo uma URL, e perde-la por causa de um
+    # limite de exibicao seria perder justamente o que importa.
+    artifacts = extract_artifacts(strings)
 
     return StringAnalysis(
-        strings=strings,
-        artifacts=extract_artifacts(strings),
-        truncated=truncated,
+        strings=strings[:MAX_STRINGS],
+        artifacts=artifacts,
+        total_found=total_found,
+        scan_truncated=scan_truncated,
+        count_truncated=count_truncated,
     )
 
 

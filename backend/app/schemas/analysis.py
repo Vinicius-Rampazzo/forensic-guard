@@ -63,13 +63,24 @@ class StringsSchema(BaseModel):
     vem sempre completos.
     """
 
-    total: int = Field(description="How many distinct strings were extracted")
+    total: int = Field(
+        description=(
+            "How many distinct strings exist in the scanned region — counted "
+            "before any limit was applied, so it can be much larger than "
+            "`returned`."
+        )
+    )
     returned: int = Field(description="How many are included in the sample below")
     truncated: bool = Field(
         description=(
-            "True when a safety limit cut the analysis short. The report is "
-            "partial and must not be read as a full examination."
+            "True when a safety limit cut the string listing short. Hashes, "
+            "entropy, type detection and the artifacts above are unaffected "
+            "and still cover the whole file."
         )
+    )
+    truncation_reason: str | None = Field(
+        default=None,
+        description="Which limit was reached, in plain language. Null when nothing was cut.",
     )
     sample: list[str]
     artifacts: ArtifactsSchema

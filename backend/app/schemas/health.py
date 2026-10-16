@@ -11,7 +11,7 @@ tipo. Ele serve para tres coisas ao mesmo tempo:
 Este e o mesmo padrao que os schemas de analise vao seguir mais adiante.
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class HealthResponse(BaseModel):
@@ -20,3 +20,11 @@ class HealthResponse(BaseModel):
     status: str
     app: str
     version: str
+
+    max_upload_size: int = Field(
+        description=(
+            "Largest accepted upload, in bytes. Exposed so the interface can "
+            "reject an oversized file before sending it, and tell the user "
+            "both numbers instead of a vague failure."
+        )
+    )

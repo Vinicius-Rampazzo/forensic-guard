@@ -33,9 +33,9 @@ from typing import Any
 from app.analyzers.email_analyzer import EmailAnalysis
 from app.analyzers.file_analyzer import FileAnalysis
 from app.analyzers.image_analyzer import MAX_SAFE_PIXELS, ImageAnalysis
+from app.analyzers.string_analyzer import MAX_SCAN_BYTES, MAX_STRINGS
 from app.analyzers.url_analyzer import find_ip_address_urls, find_punycode_urls
 from app.constants.risk_rules import (
-    ANALYSIS_TRUNCATED,
     DECOMPRESSION_BOMB,
     DKIM_FAILED,
     DMARC_FAILED,
@@ -49,6 +49,7 @@ from app.constants.risk_rules import (
     REPLY_TO_MISMATCH,
     RETURN_PATH_MISMATCH,
     SPF_FAILED,
+    STRINGS_LISTING_TRUNCATED,
     SUSPICIOUS_COMMAND,
     UNEXPECTED_ENTROPY,
     URL_WITH_IP_HOST,
@@ -328,18 +329,36 @@ def _attachment_indicators(
 
 
 def _truncation_indicators(analysis: FileAnalysis) -> list[Indicator]:
-    """Aviso de que a analise nao cobriu o arquivo inteiro.
+    """Aviso de que a listagem de strings saiu incompleta.
 
     Vale zero ponto: um arquivo grande nao e mais perigoso por ser grande. O
     indicador existe para ser honesto sobre o alcance do exame - sem ele, a
-    ausencia de achados poderia ser lida como ausencia de conteudo.
+    ausencia de uma string na lista poderia ser lida como ausencia dela no
+    arquivo.
+
+    A evidencia diz QUAL limite foi atingido. A primeira versao informava
+    apenas quantas strings foram devolvidas, e esse numero sozinho - sempre
+    igual ao teto - nao explicava nada a quem lia.
     """
-    if not analysis.strings.truncated:
+    strings = analysis.strings
+
+    if not strings.truncated:
         return []
+
+    reasons = []
+    if strings.scan_truncated:
+        reasons.append(f"only the first {MAX_SCAN_BYTES} bytes were scanned")
+    if strings.count_truncated:
+        reasons.append(f"the listing stops at {MAX_STRINGS} strings")
 
     return [
         Indicator(
-            rule=ANALYSIS_TRUNCATED,
-            evidence={"strings_extracted": len(analysis.strings.strings)},
+            rule=STRINGS_LISTING_TRUNCATED,
+            evidence={
+                "strings_found": strings.total_found,
+                "strings_listed": len(strings.strings),
+                "limit_reached": " and ".join(reasons),
+                "still_complete": "hashes, entropy, type detection, artifacts",
+            },
         )
     ]

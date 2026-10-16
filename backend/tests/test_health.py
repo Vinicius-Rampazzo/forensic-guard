@@ -24,6 +24,16 @@ class TestHealthEndpoint:
         assert payload["app"] == "ForensicGuard"
         assert "version" in payload
 
+    def test_reports_the_upload_limit(self, client: TestClient) -> None:
+        """A interface usa este valor para recusar um arquivo grande antes de enviar.
+
+        Sem ele, o frontend precisaria ter a propria copia do limite - e as
+        duas divergiriam no dia em que alguem mudasse a configuracao.
+        """
+        payload = client.get("/health").json()
+
+        assert payload["max_upload_size"] > 0
+
 
 class TestOpenApiDocumentation:
     """A documentacao automatica reflete as rotas existentes."""

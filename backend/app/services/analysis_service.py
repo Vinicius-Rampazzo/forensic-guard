@@ -60,13 +60,15 @@ from app.services.indicator_engine import collect_indicators
 from app.services.risk_engine import RiskAssessment, assess
 from app.utils.temporary_files import temporary_evidence
 
-# Quantas strings acompanham a resposta como amostra.
+# Quantas strings acompanham a resposta de um ANEXO.
 #
-# A extracao pode devolver milhares. Mandar todas tornaria cada resposta
-# pesada e a interface inutilizavel - ninguem examina 5.000 linhas. Os
-# ARTEFATOS, que sao o que tem valor forense, vao sempre completos; a lista
-# crua e so contexto, e uma amostra basta.
-STRING_SAMPLE_SIZE = 200
+# A evidencia principal vem com a lista completa, para que a interface possa
+# oferecer busca em cima dela. Anexos recebem apenas uma amostra por um
+# motivo de escala: um e-mail pode trazer vinte anexos, e vinte listas
+# completas transformariam uma resposta de 1,5 MB em 30 MB.
+#
+# Os artefatos de cada anexo continuam completos - e neles que esta o valor.
+NESTED_STRING_SAMPLE_SIZE = 200
 
 
 def analyze_evidence(
@@ -118,7 +120,7 @@ def analyze_evidence(
         filename=original_filename,
         file=_build_file_schema(file_analysis),
         detection=_build_detection_schema(detection),
-        strings=_build_strings_schema(file_analysis),
+        strings=_build_strings_schema(file_analysis, depth),
         risk=_build_risk_schema(risk),
         image=_build_image_schema(image_analysis),
         email=_build_email_schema(email_analysis, attachments),
@@ -306,17 +308,31 @@ def _build_risk_schema(assessment: RiskAssessment) -> RiskSchema:
     )
 
 
-def _build_strings_schema(analysis: FileAnalysis) -> StringsSchema:
+def _build_strings_schema(analysis: FileAnalysis, depth: int) -> StringsSchema:
+    """Monta a secao de strings da resposta.
+
+    A evidencia enviada pelo usuario (depth 0) recebe a lista completa, para
+    que a interface possa oferecer busca. Anexos recebem uma amostra.
+    """
     strings = analysis.strings
-    sample = strings.strings[:STRING_SAMPLE_SIZE]
+    sample = strings.strings if depth == 0 else strings.strings[:NESTED_STRING_SAMPLE_SIZE]
+
+    # Tres cortes possiveis, e o relatorio precisa dizer qual aconteceu. A
+    # versao anterior informava apenas "truncado", e quem lia nao tinha como
+    # saber se faltou arquivo, faltou lista, ou faltou amostra.
+    reasons = []
+    if strings.scan_truncated:
+        reasons.append("only the beginning of the file was scanned")
+    if strings.count_truncated:
+        reasons.append("the extracted list hit its own limit")
+    if len(sample) < len(strings.strings):
+        reasons.append("this attachment carries only a sample of the extracted list")
 
     return StringsSchema(
-        total=len(strings.strings),
+        total=strings.total_found,
         returned=len(sample),
-        # Verdadeiro tanto quando um limite de seguranca cortou a extracao
-        # quanto quando a amostra nao cobre todas as strings encontradas. Nos
-        # dois casos o relatorio e parcial, e quem le precisa saber disso.
-        truncated=strings.truncated or len(sample) < len(strings.strings),
+        truncated=bool(reasons),
+        truncation_reason=", and ".join(reasons) if reasons else None,
         sample=sample,
         artifacts=ArtifactsSchema(**strings.artifacts),
     )

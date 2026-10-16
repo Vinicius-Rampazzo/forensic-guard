@@ -43,9 +43,17 @@ class Settings(BaseSettings):
     # e escrever '["http://localhost:3000"]' num .env e desconfortavel.
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
 
-    # Limite de upload. Existe por seguranca, nao por conveniencia: sem limite,
-    # um unico arquivo gigante derruba o servico (negacao de servico).
-    max_upload_size: int = 25 * 1024 * 1024  # 25 MB
+    # Limite de upload. Existe por seguranca, nao por conveniencia: sem limite
+    # algum, um unico arquivo derruba o servico por esgotar o disco.
+    #
+    # O valor e generoso porque a ferramenta roda localmente, analisando
+    # evidencias do proprio usuario - imagens de disco, despejos e arquivos
+    # compactados grandes sao casos legitimos. Quase toda a analise le em
+    # blocos de 64 KB, entao o consumo de memoria nao cresce junto.
+    #
+    # A excecao e o parser de e-mail, que precisa da mensagem inteira em
+    # memoria. Ele tem um teto proprio e menor, em `email_analyzer`.
+    max_upload_size: int = 1024 * 1024 * 1024  # 1 GB
 
     # Onde as evidencias sao gravadas enquanto estao sendo analisadas.
     # Nada persiste aqui: cada arquivo e apagado ao fim da analise.

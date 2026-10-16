@@ -15,4 +15,14 @@ export interface HealthResponse {
   status: string;
   app: string;
   version: string;
+  /**
+   * Maior upload aceito, em bytes.
+   *
+   * Vem do backend em vez de ser repetido aqui por um motivo pratico: o
+   * limite e configuravel por variavel de ambiente. Se o frontend tivesse a
+   * propria copia do numero, os dois divergiriam no dia em que alguem
+   * mudasse a configuracao - e o usuario veria uma mensagem mentindo sobre
+   * qual e o limite.
+   */
+  max_upload_size: number;
 }

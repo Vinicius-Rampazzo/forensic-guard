@@ -426,17 +426,28 @@ class TestStringsPayload:
         assert strings["total"] >= strings["returned"]
         assert len(strings["sample"]) == strings["returned"]
 
-    def test_marks_the_sample_as_truncated_when_it_is(self, client: TestClient) -> None:
-        """Relatorio parcial precisa se declarar parcial.
+    def test_the_uploaded_evidence_gets_the_full_listing(self, client: TestClient) -> None:
+        """A evidencia principal vem com a lista completa, nao com uma amostra.
 
-        O arquivo abaixo gera muito mais strings do que cabem na amostra.
+        E o que permite a interface oferecer busca. Uma amostra de 200 tirada
+        de milhares seria inutil: quem analisa nao escolheu aquelas 200, e
+        procurar algo especifico nelas vira sorte.
         """
         many = b"".join(f"string-numero-{index}\x00".encode() for index in range(1000))
 
         strings = post_evidence(client, "muitas.bin", many).json()["strings"]
 
-        assert strings["truncated"] is True
-        assert strings["returned"] < strings["total"]
+        assert strings["returned"] == strings["total"] == 1000
+        assert strings["truncated"] is False
+        assert strings["truncation_reason"] is None
+
+    def test_the_total_is_the_real_count(self, client: TestClient) -> None:
+        """O total conta as strings de verdade, nao o tamanho da lista devolvida."""
+        many = b"".join(f"string-numero-{index}\x00".encode() for index in range(1000))
+
+        strings = post_evidence(client, "muitas.bin", many).json()["strings"]
+
+        assert strings["total"] == 1000
 
     def test_small_file_is_not_marked_as_truncated(self, client: TestClient) -> None:
         strings = post_evidence(client, "grafico.png", PNG).json()["strings"]

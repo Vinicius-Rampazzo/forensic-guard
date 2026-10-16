@@ -52,6 +52,21 @@ MAX_MIME_PARTS = 500
 # Tamanho maximo de um anexo mantido em memoria para analise.
 MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
 
+# Tamanho maximo de um arquivo .eml analisado.
+#
+# Este e o UNICO ponto do projeto que precisa do arquivo inteiro em memoria:
+# o parser constroi a arvore MIME completa antes de devolver qualquer coisa,
+# e nao existe forma de percorrer as partes sem monta-la.
+#
+# Por isso o teto aqui e proprio, e muito menor que o limite geral de upload.
+# Sem ele, um `.eml` do tamanho do limite de upload consumiria essa memoria
+# toda de uma vez - e duas analises simultaneas derrubariam o servico.
+#
+# 64 MB cobre com folga qualquer mensagem real: provedores recusam anexos bem
+# antes disso, e um e-mail maior que a caixa de entrada inteira de muita gente
+# e, por si so, anomalo.
+MAX_EMAIL_BYTES = 64 * 1024 * 1024
+
 # Quantas URLs sao reportadas. Um corpo HTML pode ter centenas de links.
 MAX_URLS = 200
 
@@ -171,6 +186,21 @@ def analyze_email(path: Path) -> EmailAnalysis:
     quebrada ou deliberadamente malformadas.
     """
     try:
+        size = path.stat().st_size
+
+        # Verificado ANTES de abrir: depois que o parser comeca, a memoria ja
+        # foi comprometida. O numero exato entra na mensagem para que quem le
+        # saiba o que aconteceu, em vez de receber uma recusa sem explicacao.
+        if size > MAX_EMAIL_BYTES:
+            return EmailAnalysis(
+                error=(
+                    f"Email is {size} bytes, above the {MAX_EMAIL_BYTES} byte "
+                    "limit for message parsing. Parsing requires the whole "
+                    "message in memory, so this limit is lower than the "
+                    "general upload limit."
+                )
+            )
+
         with path.open("rb") as stream:
             message = message_from_binary_file(stream)
 
