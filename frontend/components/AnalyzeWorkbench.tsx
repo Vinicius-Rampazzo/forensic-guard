@@ -18,7 +18,7 @@
 
 "use client";
 
-import { AlertCircle, RotateCcw, ShieldAlert } from "lucide-react";
+import { AlertCircle, Loader2, RotateCcw, ShieldAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
@@ -27,10 +27,10 @@ import { AnalysisReport } from "@/components/AnalysisReport";
 import { EmptyState } from "@/components/EmptyState";
 import { UrlReport } from "@/components/UrlReport";
 import { formatBytes } from "@/components/format";
-import { useApiHealth } from "@/components/useApiHealth";
+import { useApiHealth } from "@/components/ApiHealthProvider";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { analyzeEvidence, analyzeUrl } from "@/services/api";
+import { IS_LOCAL_API, analyzeEvidence, analyzeUrl } from "@/services/api";
 import type { AnalysisResult, UrlAnalysisResult } from "@/types/analysis";
 
 type Screen =
@@ -45,7 +45,7 @@ export function AnalyzeWorkbench() {
   const tApp = useTranslations("app");
 
   const [screen, setScreen] = useState<Screen>({ state: "idle" });
-  const { status: apiStatus, uploadLimit } = useApiHealth();
+  const { status: apiStatus, uploadLimit, retry: retryHealth } = useApiHealth();
 
   // Guarda o controlador do envio em andamento para poder cancelar quando o
   // componente sair da tela. useRef porque trocar este valor nao deve
@@ -165,7 +165,10 @@ export function AnalyzeWorkbench() {
         <EmptyState
           onFileSelected={handleFile}
           onUrlSubmitted={handleUrl}
-          disabled={apiStatus === "offline"}
+          // Desabilitado em tudo que nao for "online" - inclusive enquanto o
+          // servidor sobe. Deixar enviar durante a partida a frio produziria
+          // um erro que nao e erro, e ensinaria que a ferramenta e instavel.
+          disabled={apiStatus !== "online"}
           uploadLimit={uploadLimit}
         />
       )}
@@ -194,14 +197,50 @@ export function AnalyzeWorkbench() {
         </Alert>
       )}
 
-      {apiStatus === "offline" && screen.state === "idle" && (
+      {/*
+        O aviso no corpo da pagina repete, em outro lugar, o que o balao do
+        cabecalho ja diz. Nao e redundancia desnecessaria: o balao pode ter
+        sido fechado, e esta e a tela onde a informacao importa - a area de
+        upload esta desabilitada e precisa explicar por que.
+      */}
+      {screen.state === "idle" && apiStatus === "waking" && (
+        <Alert className="mx-auto mt-8 max-w-2xl">
+          <Loader2 className="animate-spin" />
+          <AlertTitle>{tApp("wakeTitle")}</AlertTitle>
+          <AlertDescription>{tApp("wakeBody")}</AlertDescription>
+        </Alert>
+      )}
+
+      {screen.state === "idle" && apiStatus === "offline" && (
         <Alert className="mx-auto mt-8 max-w-2xl">
           <ShieldAlert />
-          <AlertTitle>{tApp("backendDownTitle")}</AlertTitle>
+          {/* Mesmo criterio do balao: com backend remoto ainda estamos
+              tentando, e o titulo nao pode soar definitivo. */}
+          <AlertTitle>
+            {IS_LOCAL_API ? tApp("backendDownTitle") : tApp("wakeSlowTitle")}
+          </AlertTitle>
           <AlertDescription>
-            {tApp.rich("backendDownBody", {
-              command: () => <code className="font-mono text-xs">python backend/dev.py</code>,
-            })}
+            {/* Tag, nao `{placeholder}`: ver a nota em ApiStatusBadge. */}
+            <p>
+              {IS_LOCAL_API
+                ? tApp.rich("backendDownBody", {
+                    command: (chunks) => (
+                      <code className="font-mono text-xs">{chunks}</code>
+                    ),
+                  })
+                : tApp("wakeFailedBody")}
+            </p>
+
+            {/*
+              O botao tambem aqui, e nao so no balao do cabecalho. O texto diz
+              "tente novamente", e seria estranho dizer isso sem oferecer o
+              botao - ainda mais porque o balao pode ter sido fechado. Os dois
+              acionam o mesmo estado compartilhado, entao nao ha como um ficar
+              dizendo uma coisa e o outro dizendo outra.
+            */}
+            <Button variant="outline" size="sm" className="mt-3" onClick={retryHealth}>
+              {tApp("retry")}
+            </Button>
           </AlertDescription>
         </Alert>
       )}

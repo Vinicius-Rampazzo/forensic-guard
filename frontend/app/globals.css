@@ -483,7 +483,10 @@
   .fg-cue,
   .fg-caret,
   .fg-beam::after,
-  .fg-stagger > * {
+  .fg-stagger > *,
+  /* Utilitario do Tailwind, usado no anel do pontinho de estado da API.
+     Nada se perde: o ponto continua colorido, so para de pulsar. */
+  .animate-ping {
     animation: none !important;
   }
 

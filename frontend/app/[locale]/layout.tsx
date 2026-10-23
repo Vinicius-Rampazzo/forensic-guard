@@ -18,6 +18,7 @@ import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { ApiHealthProvider } from "@/components/ApiHealthProvider";
 import { AppHeader } from "@/components/AppHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -167,9 +168,17 @@ export default async function LocaleLayout({
       <body className="flex min-h-full flex-col">
         <NextIntlClientProvider>
           <TooltipProvider delayDuration={300}>
-            <AppHeader />
-            {children}
-            <SiteFooter />
+            {/*
+              A saude da API e consultada UMA vez, aqui, e compartilhada com
+              quem precisar. O cabecalho e a bancada de analise liam o mesmo
+              estado por conta propria antes disto, e com o botao de tentar
+              novamente os dois passaram a poder discordar.
+            */}
+            <ApiHealthProvider>
+              <AppHeader />
+              {children}
+              <SiteFooter />
+            </ApiHealthProvider>
           </TooltipProvider>
         </NextIntlClientProvider>
       </body>

@@ -4,10 +4,22 @@
     "apiOffline": "API offline",
     "analyseAnother": "Analyse another file",
     "backendDownTitle": "The backend is not responding",
-    "backendDownBody": "Start it with {command} and reload this page.",
+    "backendDownBody": "Run <command>python backend/dev.py</command> in a terminal, then try again.",
     "privacyLine": "Privacy first — no database, no account, no permanent evidence storage.",
     "disclaimerLine": "Static triage based on indicators and heuristics. Not a definitive malware or phishing verdict.",
-    "analyse": "Analyse"
+    "analyse": "Analyse",
+    "api": {
+      "checking": "checking",
+      "waking": "starting",
+      "online": "API online",
+      "offline": "API offline"
+    },
+    "wakeTitle": "Connecting to the server",
+    "wakeBody": "The server goes to sleep after a few minutes without use and has to start back up. The connection happens on its own — there is nothing to do but wait about a minute.",
+    "wakeFailedBody": "We are still trying to connect automatically, now less often. The page unlocks by itself when the server answers — or force a new attempt below.",
+    "retry": "Try again",
+    "wakeReady": "As soon as it is online, the upload area unlocks and you can analyse your file.",
+    "wakeSlowTitle": "This is taking longer than usual"
   },
   "landing": {
     "headline": "Know what a file really is",

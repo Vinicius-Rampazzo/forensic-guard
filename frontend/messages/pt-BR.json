@@ -4,10 +4,22 @@
     "apiOffline": "API offline",
     "analyseAnother": "Analisar outro arquivo",
     "backendDownTitle": "O backend não está respondendo",
-    "backendDownBody": "Inicie com {command} e recarregue esta página.",
+    "backendDownBody": "Rode <command>python backend/dev.py</command> num terminal e tente novamente.",
     "privacyLine": "Privacidade em primeiro lugar — sem banco de dados, sem conta, sem armazenamento permanente.",
     "disclaimerLine": "Triagem estática baseada em indicadores e heurísticas. Não é um veredito definitivo de malware ou phishing.",
-    "analyse": "Analisar"
+    "analyse": "Analisar",
+    "api": {
+      "checking": "verificando",
+      "waking": "ligando",
+      "online": "API online",
+      "offline": "API offline"
+    },
+    "wakeTitle": "Conectando ao servidor",
+    "wakeBody": "O servidor hiberna depois de alguns minutos sem uso e precisa ser religado. A conexão acontece sozinha — não há nada a fazer além de aguardar cerca de um minuto.",
+    "wakeFailedBody": "Seguimos tentando conectar automaticamente, agora com menos frequência. A página libera sozinha quando o servidor responder — ou force uma nova tentativa abaixo.",
+    "retry": "Tentar novamente",
+    "wakeReady": "Assim que ficar online, a área de envio é liberada e você poderá analisar o seu arquivo.",
+    "wakeSlowTitle": "Está demorando mais que o normal"
   },
   "landing": {
     "headline": "Descubra o que um arquivo realmente é",

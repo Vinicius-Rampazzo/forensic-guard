@@ -15,16 +15,27 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
 
+import { ApiStatusBadge } from "@/components/ApiStatusBadge";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { Logo, Wordmark } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { useApiHealth } from "@/components/useApiHealth";
+import { useApiHealth } from "@/components/ApiHealthProvider";
 import { Button } from "@/components/ui/button";
 import { Link, usePathname } from "@/i18n/navigation";
 
 export function AppHeader() {
   const t = useTranslations("app");
-  const { status } = useApiHealth();
+
+  /*
+    A consulta roda em TODAS as rotas, mesmo onde o selo nao aparece.
+
+    Nao e desperdicio, e o contrario: num servidor que hiberna, a requisicao
+    feita ao abrir o institucional ja comeca a acordar o backend. Enquanto a
+    pessoa le a pagina, ele sobe - e quando ela clica em "Iniciar analise", na
+    maioria das vezes ja esta pronto. A espera acontece no tempo de leitura,
+    que e tempo que ela ia gastar de qualquer jeito.
+  */
+  const { status, wakingSince, retry } = useApiHealth();
 
   // `usePathname` do next-intl devolve o caminho SEM o prefixo de idioma, por
   // isso a comparacao e com "/analyze" e nao com "/pt-br/analyze".
@@ -103,15 +114,21 @@ export function AppHeader() {
 
         <div className="ml-auto flex items-center gap-1.5">
           {/*
-            O estado da API so aparece quando ha problema.
-            Um indicador permanente dizendo "tudo certo" e ruido: ele ocupa
-            espaco o tempo todo para comunicar o caso que nao exige acao.
+            O selo so aparece na tela de analise.
+
+            No institucional ele nao significa nada: aquela pagina e texto
+            estatico e nao depende do backend para nada. Mostrar ali o estado
+            de um servidor que a pessoa ainda nem vai usar e ruido - e, pior,
+            um "API offline" vermelho na primeira tela passa a impressao de
+            projeto quebrado quando nao ha nada quebrado.
+
+            Na tela de analise ele aparece em TODOS os estados, inclusive
+            "online". Ali o estado e acionavel: a area de upload depende dele,
+            e com um servidor que hiberna e volta sozinho, ver que ficou
+            pronto e justamente o que a pessoa esta esperando.
           */}
-          {status === "offline" && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/40 px-2.5 py-1 text-[11px] font-medium text-red-600 dark:text-red-400">
-              <span className="size-1.5 rounded-full bg-red-500" />
-              {t("apiOffline")}
-            </span>
+          {pathname === "/analyze" && (
+            <ApiStatusBadge status={status} wakingSince={wakingSince} onRetry={retry} />
           )}
 
           {pathname !== "/analyze" && (

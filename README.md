@@ -2,6 +2,8 @@
 
 **Lightweight Digital Evidence Analyzer**
 
+![The ForensicGuard landing page, showing the logo, the headline "Descubra o que um arquivo realmente é", and counters for 33 recognised formats, 16 risk rules and 275 backend tests](docs/screenshots/landing.png)
+
 Open-source forensic triage tool for inspecting files, images and emails for
 suspicious indicators, metadata anomalies and potential security threats.
 
@@ -208,9 +210,16 @@ you on the same page.
 | http://localhost:3000/pt-br | Landing page, in Portuguese |
 | http://localhost:3000/en-us/analyze | The analysis tool |
 
-The header shows a red **API offline** badge when the frontend cannot reach the
-backend; there is no badge while everything is fine. If the badge appears,
-check that step 3 is still running in the other terminal.
+The header always shows the API status. It must read **API online** in green.
+If it reads **API offline** in red, click the badge: the explanation opens with
+a *Try again* button. Check that step 3 is still running in the other terminal.
+
+A third state, **starting**, only appears when `NEXT_PUBLIC_API_URL` points at a
+remote server. Free hosting plans put a service to sleep after a while, and the
+first request has to wake it up — the badge explains the wait instead of
+claiming the API is down. Against a local backend this state never shows: a
+backend that is not running refuses the connection immediately, so there is
+nothing to wait for.
 
 Two more addresses worth opening:
 

@@ -20,6 +20,26 @@ import type { HealthResponse } from "@/types/api";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
 
 /**
+ * O backend e o da propria maquina, ou um servidor remoto?
+ *
+ * A diferenca muda o que a interface deve dizer quando a API nao responde:
+ *
+ *   local   -> "voce esqueceu de rodar `python backend/dev.py`"
+ *   remoto  -> "o servidor esta ligando, aguarde"
+ *
+ * E muda tambem quanto tempo esperar. Um backend local que nao esta no ar
+ * recusa a conexao em milissegundos; nao ha o que aguardar. Um servidor em
+ * plano gratuito que hiberna simplesmente demora a responder - segurar a
+ * requisicao por um minuto ali e o comportamento correto.
+ *
+ * Decidido na compilacao, a partir da URL. Sem adivinhacao em tempo de
+ * execucao e sem variavel de ambiente extra para manter em sincronia.
+ */
+export const IS_LOCAL_API = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/i.test(
+  API_BASE_URL,
+);
+
+/**
  * Erro vindo da API.
  *
  * Uma classe propria permite que o componente distinga "a API respondeu com
