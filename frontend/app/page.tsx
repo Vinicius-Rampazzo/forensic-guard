@@ -3,8 +3,8 @@
  *
  * Quatro estados, um de cada vez:
  *
- *   idle      -> area de upload
- *   analysing -> indicador de progresso
+ *   idle      -> o que a ferramenta faz + area de upload
+ *   analysing -> esqueleto do relatorio
  *   done      -> relatorio
  *   failed    -> mensagem de erro e caminho de volta
  *
@@ -15,25 +15,38 @@
 
 "use client";
 
+import { AlertCircle, ShieldAlert } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
 import { AnalysisLoading } from "@/components/AnalysisLoading";
 import { AnalysisReport } from "@/components/AnalysisReport";
-import { FileDropzone } from "@/components/FileDropzone";
-import { formatBytes } from "@/components/FileOverview";
+import { EmptyState } from "@/components/EmptyState";
+import { LandingScreen } from "@/components/LandingScreen";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { Logo, Wordmark } from "@/components/Logo";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { formatBytes } from "@/components/format";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { analyzeEvidence, getHealth } from "@/services/api";
+import { cn } from "@/lib/utils";
 import type { AnalysisResult } from "@/types/analysis";
 
 type ApiStatus = "checking" | "online" | "offline";
 
 type Screen =
+  | { state: "landing" }
   | { state: "idle" }
   | { state: "analysing"; filename: string }
   | { state: "done"; result: AnalysisResult }
   | { state: "failed"; message: string };
 
 export default function Home() {
-  const [screen, setScreen] = useState<Screen>({ state: "idle" });
+  const tErrors = useTranslations("errors");
+  const tApp = useTranslations("app");
+
+  const [screen, setScreen] = useState<Screen>({ state: "landing" });
   const [apiStatus, setApiStatus] = useState<ApiStatus>("checking");
 
   // Limite de upload informado pelo backend. Null enquanto a checagem de
@@ -70,9 +83,9 @@ export default function Home() {
   async function handleFile(file: File) {
     // Verificacao do tamanho ANTES de enviar.
     //
-    // O navegador ja conhece o tamanho do arquivo, entao mandar 300 MB pela
-    // rede so para receber um 413 e desperdicio - e a mensagem de erro fica
-    // mais util quando diz os DOIS numeros, o do arquivo e o do limite.
+    // O navegador ja conhece o tamanho do arquivo, entao mandar centenas de
+    // megabytes pela rede so para receber um 413 e desperdicio - e a mensagem
+    // fica mais util quando diz os DOIS numeros.
     //
     // Isto nao substitui a verificacao do servidor: um cliente qualquer pode
     // ignorar esta checagem. Validacao no cliente e conveniencia; a do
@@ -80,10 +93,10 @@ export default function Home() {
     if (uploadLimit !== null && file.size > uploadLimit) {
       setScreen({
         state: "failed",
-        message:
-          `This file is ${formatBytes(file.size)}, and the server accepts up to ` +
-          `${formatBytes(uploadLimit)}. The limit is configurable in ` +
-          `backend/.env via MAX_UPLOAD_SIZE.`,
+        message: tErrors("tooLarge", {
+          size: formatBytes(file.size),
+          limit: formatBytes(uploadLimit),
+        }),
       });
       return;
     }
@@ -104,128 +117,147 @@ export default function Home() {
 
       setScreen({
         state: "failed",
-        message: error instanceof Error ? error.message : "Analysis failed.",
+        message: error instanceof Error ? error.message : tErrors("generic"),
       });
     }
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-6 py-12">
-      <Header apiStatus={apiStatus} showReset={screen.state !== "idle"} onReset={() => setScreen({ state: "idle" })} />
+    <div className="flex min-h-full flex-col">
+      <AppHeader
+        apiStatus={apiStatus}
+        showReset={screen.state === "done" || screen.state === "failed"}
+        onReset={() => setScreen({ state: "idle" })}
+        onHome={() => setScreen({ state: "landing" })}
+      />
 
-      {screen.state === "idle" && (
-        <FileDropzone
-          onFileSelected={handleFile}
-          disabled={apiStatus === "offline"}
-          uploadLimit={uploadLimit}
-        />
-      )}
-
-      {screen.state === "analysing" && <AnalysisLoading filename={screen.filename} />}
-
-      {screen.state === "done" && <AnalysisReport result={screen.result} />}
-
-      {screen.state === "failed" && (
-        <FailureNotice
-          message={screen.message}
-          onRetry={() => setScreen({ state: "idle" })}
-        />
-      )}
-
-      {apiStatus === "offline" && screen.state === "idle" && (
-        <p className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 text-sm text-amber-600 dark:text-amber-400">
-          The backend is not responding. Start it with{" "}
-          <code className="font-mono">python backend/dev.py</code> and reload this page.
-        </p>
-      )}
-
-      <Footer />
-    </main>
-  );
-}
-
-function Header({
-  apiStatus,
-  showReset,
-  onReset,
-}: {
-  apiStatus: ApiStatus;
-  showReset: boolean;
-  onReset: () => void;
-}) {
-  const statusStyle = {
-    checking: "border-zinc-500/40 bg-zinc-500/10 text-zinc-500",
-    online: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-    offline: "border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-400",
-  }[apiStatus];
-
-  const statusLabel = {
-    checking: "checking API",
-    online: "API online",
-    offline: "API offline",
-  }[apiStatus];
-
-  return (
-    <header className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold tracking-tight">ForensicGuard</h1>
-
-        <div className="flex items-center gap-3">
-          {showReset && (
-            <button
-              type="button"
-              onClick={onReset}
-              className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium transition-colors hover:border-zinc-500 dark:border-zinc-700"
-            >
-              Analyse another file
-            </button>
-          )}
-
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${statusStyle}`}
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-current" />
-            {statusLabel}
-          </span>
-        </div>
-      </div>
-
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">
-        Lightweight digital evidence analyzer. Files are removed after
-        processing — nothing is stored.
-      </p>
-    </header>
-  );
-}
-
-function FailureNotice({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return (
-    <div className="flex flex-col items-start gap-3 rounded-lg border border-red-500/40 bg-red-500/5 p-5">
-      <h2 className="text-sm font-semibold text-red-600 dark:text-red-400">
-        Analysis failed
-      </h2>
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">{message}</p>
-      <button
-        type="button"
-        onClick={onRetry}
-        className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium transition-colors hover:border-zinc-500 dark:border-zinc-700"
+      {/*
+        A chave muda a cada troca de tela, entao o React recria a arvore e a
+        animacao de entrada roda de novo - sem isso a troca seria um corte
+        seco entre dois conteudos completamente diferentes.
+      */}
+      <main
+        key={screen.state}
+        className="fg-rise mx-auto w-full max-w-6xl flex-1 px-6 py-10"
       >
-        Try another file
-      </button>
+        {screen.state === "landing" && (
+          <LandingScreen onEnter={() => setScreen({ state: "idle" })} />
+        )}
+
+        {screen.state === "idle" && (
+          <EmptyState
+            onFileSelected={handleFile}
+            disabled={apiStatus === "offline"}
+            uploadLimit={uploadLimit}
+          />
+        )}
+
+        {screen.state === "analysing" && <AnalysisLoading filename={screen.filename} />}
+
+        {screen.state === "done" && <AnalysisReport result={screen.result} />}
+
+        {screen.state === "failed" && (
+          <Alert variant="destructive" className="mx-auto max-w-2xl">
+            <AlertCircle />
+            <AlertTitle>{tErrors("failedTitle")}</AlertTitle>
+            <AlertDescription>
+              <p>{screen.message}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3"
+                onClick={() => setScreen({ state: "idle" })}
+              >
+                {tErrors("tryAnother")}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {apiStatus === "offline" && screen.state === "idle" && (
+          <Alert className="mx-auto mt-8 max-w-2xl">
+            <ShieldAlert />
+            <AlertTitle>{tApp("backendDownTitle")}</AlertTitle>
+            <AlertDescription>
+              {tApp.rich("backendDownBody", {
+                command: () => (
+                  <code className="font-mono text-xs">python backend/dev.py</code>
+                ),
+              })}
+            </AlertDescription>
+          </Alert>
+        )}
+      </main>
+
+      <footer className="border-t">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-1 px-6 py-5 text-[11px] text-muted-foreground">
+          <p className="font-medium">{tApp("privacyLine")}</p>
+          <p>{tApp("disclaimerLine")}</p>
+        </div>
+      </footer>
     </div>
   );
 }
 
-function Footer() {
+function AppHeader({
+  apiStatus,
+  showReset,
+  onReset,
+  onHome,
+}: {
+  apiStatus: ApiStatus;
+  showReset: boolean;
+  onReset: () => void;
+  onHome: () => void;
+}) {
+  const t = useTranslations("app");
+
+  const status = {
+    checking: { key: "apiChecking", dot: "bg-muted-foreground", text: "text-muted-foreground" },
+    online: { key: "apiOnline", dot: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400" },
+    offline: { key: "apiOffline", dot: "bg-red-500", text: "text-red-600 dark:text-red-400" },
+  }[apiStatus];
+
   return (
-    <footer className="mt-auto flex flex-col gap-1 border-t border-zinc-100 pt-6 text-xs text-zinc-400 dark:border-zinc-900 dark:text-zinc-600">
-      <p className="font-medium">
-        Privacy first — no database, no account, no permanent evidence storage.
-      </p>
-      <p>
-        Static triage based on indicators and heuristics. Not a definitive
-        malware or phishing verdict.
-      </p>
-    </footer>
+    <header className="sticky top-0 z-20 border-b bg-background/80 backdrop-blur">
+      <div className="mx-auto flex w-full max-w-6xl items-center gap-4 px-6 py-2.5">
+        {/*
+          A marca leva de volta a tela de entrada. E a convencao que todo
+          mundo ja conhece, e evita um botao "voltar" a mais no cabecalho.
+        */}
+        <button
+          type="button"
+          onClick={onHome}
+          className="flex min-w-0 items-center gap-2 rounded-md transition-opacity hover:opacity-80"
+        >
+          <Logo className="size-7 shrink-0" />
+          <Wordmark className="text-base" />
+          <span className="hidden text-xs text-muted-foreground md:inline">
+            {t("tagline")}
+          </span>
+        </button>
+
+        <div className="ml-auto flex items-center gap-1.5">
+          {showReset && (
+            <Button variant="outline" size="sm" onClick={onReset}>
+              {t("analyseAnother")}
+            </Button>
+          )}
+
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium",
+              status.text,
+            )}
+          >
+            <span className={cn("size-1.5 rounded-full", status.dot)} />
+            {t(status.key)}
+          </span>
+
+          <LanguageToggle />
+          <ThemeToggle />
+        </div>
+      </div>
+    </header>
   );
 }

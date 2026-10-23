@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from app.analyzers.string_analyzer import StringAnalysis, analyze_strings
-from app.utils.entropy import compute_entropy
+from app.utils.entropy import compute_entropy_profile
 from app.utils.hashing import compute_hashes
 
 
@@ -32,23 +32,33 @@ class FileAnalysis:
     Attributes:
         size: tamanho em bytes.
         hashes: do nome do algoritmo para o valor hexadecimal.
-        entropy: entropia de Shannon, de 0 a 8.
+        entropy: entropia de Shannon do arquivo inteiro, de 0 a 8.
+        entropy_blocks: entropia de cada pedaco do arquivo, em ordem. E o que
+            permite enxergar ONDE o conteudo muda de natureza - uma secao
+            empacotada dentro de um executavel some na media global e aparece
+            como planalto no mapa.
         strings: strings legiveis e artefatos reconhecidos.
     """
 
     size: int
     hashes: dict[str, str]
     entropy: float
+    entropy_blocks: tuple[float, ...]
     strings: StringAnalysis
 
 
 def analyze_file(path: Path) -> FileAnalysis:
     """Executa a analise generica de um arquivo.
 
-    Cada etapa le o arquivo por conta propria, em blocos. Sao tres leituras em
-    vez de uma, e isso e deliberado: o sistema operacional mantem em cache um
-    arquivo recem-lido, entao o custo real e baixo, e cada funcao continua
-    independente e testavel sozinha.
+    Cada etapa le o arquivo por conta propria, em blocos. Sao leituras
+    separadas em vez de uma, e isso e deliberado: o sistema operacional mantem
+    em cache um arquivo recem-lido, entao o custo real e baixo, e cada funcao
+    continua independente e testavel sozinha.
+
+    A excecao e a entropia: o valor global e o mapa por bloco saem da MESMA
+    leitura, porque as contagens dos blocos somadas ja dao a contagem do
+    arquivo inteiro. Calcula-los separadamente custaria um passe a mais sem
+    ganho nenhum.
 
     Args:
         path: caminho do arquivo em disco - um temporario, na pratica.
@@ -56,9 +66,12 @@ def analyze_file(path: Path) -> FileAnalysis:
     Returns:
         Os fatos observados. Nenhum deles e veredito.
     """
+    entropy = compute_entropy_profile(path)
+
     return FileAnalysis(
         size=path.stat().st_size,
         hashes=compute_hashes(path),
-        entropy=compute_entropy(path),
+        entropy=entropy.overall,
+        entropy_blocks=entropy.blocks,
         strings=analyze_strings(path),
     )

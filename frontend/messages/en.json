@@ -1,0 +1,120 @@
+{
+  "app": {
+    "name": "ForensicGuard",
+    "tagline": "Digital Evidence Analyzer",
+    "apiOnline": "API online",
+    "apiOffline": "API offline",
+    "apiChecking": "checking API",
+    "analyseAnother": "Analyse another file",
+    "theme": "Colour theme",
+    "language": "Language",
+    "backendDownTitle": "The backend is not responding",
+    "backendDownBody": "Start it with {command} and reload this page.",
+    "privacyLine": "Privacy first — no database, no account, no permanent evidence storage.",
+    "disclaimerLine": "Static triage based on indicators and heuristics. Not a definitive malware or phishing verdict."
+  },
+  "landing": {
+    "headline": "Know what a file really is",
+    "subheadline": "Forensic triage that inspects files, images and emails without ever opening them.",
+    "enter": "Start analysis",
+    "formats": "formats recognised",
+    "rules": "risk rules",
+    "tests": "backend tests",
+    "noDatabase": "no database",
+    "noAccount": "no account",
+    "noUpload": "never leaves your machine",
+    "scrollHint": "Everything runs locally"
+  },
+  "upload": {
+    "question": "Does this file deserve a closer look?",
+    "intro": "Drop a file, an image or an email. ForensicGuard inspects it without opening it, gathers objective indicators, and explains every point it assigns.",
+    "drop": "Drop evidence here",
+    "release": "Release to analyse",
+    "or": "or select a file from your computer",
+    "select": "Select file",
+    "andMore": "and more",
+    "limit": "Up to {size} per file",
+    "analysing": "Analysing evidence…"
+  },
+  "capabilities": {
+    "file": "Any file",
+    "image": "Images",
+    "email": "Emails (.eml)",
+    "fileItems": "MD5, SHA-1, SHA-256, SHA-512|Shannon entropy and entropy map|Real format from magic bytes|Extension vs signature mismatch|URLs, IPs, paths, LOLBins",
+    "imageItems": "Dimensions and colour mode|Full EXIF metadata|Camera make and model|Editing software|GPS coordinates",
+    "emailItems": "Headers and Received chain|SPF, DKIM and DMARC|Reply-To and Return-Path checks|Links that hide their destination|Attachments analysed recursively"
+  },
+  "privacy": {
+    "title": "What happens to your file",
+    "local": "It never leaves your machine — the analysis runs on the backend you started yourself.",
+    "noExecution": "Nothing is executed. No macro runs, no image is decoded, no address is contacted.",
+    "temporary": "It is written to a temporary file with a generated name and deleted when the analysis ends — including when it fails.",
+    "noHistory": "No database, no account, no history."
+  },
+  "risk": {
+    "title": "Risk score",
+    "explanation": "Every indicator that fires adds points, capped at 100. Each one carries the evidence that triggered it — a number without a justification is an opinion, not a finding.",
+    "low": "low",
+    "medium": "medium",
+    "high": "high",
+    "critical": "critical",
+    "info": "info",
+    "noIndicators": "No indicators found",
+    "scoredIndicators": "{count, plural, =1 {# scored indicator} other {# scored indicators}}",
+    "informational": "{count} informational"
+  },
+  "report": {
+    "indicators": "Indicators",
+    "overview": "Overview",
+    "hashes": "Hashes",
+    "image": "Image",
+    "headers": "Headers",
+    "links": "Links",
+    "attachments": "Attachments",
+    "strings": "Strings",
+    "charts": "Charts",
+    "export": "Export",
+    "unrecognised": "unrecognised format"
+  },
+  "charts": {
+    "scoreComposition": "Score composition",
+    "scoreCompositionHint": "How much each indicator contributed to the total.",
+    "artifacts": "Artifacts by category",
+    "artifactsHint": "How many of each pattern were recognised inside the file.",
+    "entropyMap": "Entropy map",
+    "entropyMapHint": "Entropy of each successive block. A packed or encrypted section shows up as a plateau near 8 — something the overall average hides.",
+    "entropyAxis": "bits per byte",
+    "positionAxis": "position in file",
+    "noData": "Not enough data for this chart.",
+    "severity": "Severity distribution",
+    "severityHint": "How the findings break down by gravity.",
+    "totalIndicators": "{count} indicators in total",
+    "peak": "peak",
+    "average": "average",
+    "aboveThreshold": "above 7.2",
+    "found": "found",
+    "points": "points",
+    "sum": "sum"
+  },
+  "errors": {
+    "failedTitle": "Analysis failed",
+    "tryAnother": "Try another file",
+    "tooLarge": "This file is {size}, and the server accepts up to {limit}. The limit is configurable in backend/.env via MAX_UPLOAD_SIZE.",
+    "generic": "Analysis failed."
+  },
+  "export": {
+    "json": "Download JSON",
+    "html": "Download HTML report",
+    "hint": "The HTML report is a single self-contained file. It opens in any browser, with no server and no internet connection."
+  },
+  "overview": {
+    "size": "Size",
+    "entropy": "Entropy",
+    "detected": "Detected",
+    "indicators": "Indicators",
+    "strings": "Strings",
+    "weakSignature": "weak signature",
+    "strongSignature": "strong signature",
+    "notRecognised": "not recognised"
+  }
+}

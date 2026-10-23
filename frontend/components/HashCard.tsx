@@ -65,16 +65,16 @@ function HashRow({
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-2">
         <span className="text-xs font-medium">{label}</span>
-        {note && <span className="text-[11px] text-zinc-400 dark:text-zinc-600">{note}</span>}
+        {note && <span className="text-[11px] text-muted-foreground/60">{note}</span>}
         <button
           type="button"
           onClick={copy}
-          className="ml-auto rounded border border-zinc-200 px-2 py-0.5 text-[11px] text-zinc-500 transition-colors hover:border-zinc-400 dark:border-zinc-800 dark:text-zinc-400"
+          className="ml-auto rounded border px-2 py-0.5 text-[11px] text-muted-foreground transition-colors hover:border-foreground/40"
         >
           {copied ? "copied" : "copy"}
         </button>
       </div>
-      <code className="rounded bg-zinc-50 px-2 py-1.5 font-mono text-[11px] break-all dark:bg-zinc-900/60">
+      <code className="rounded bg-muted/40 px-2 py-1.5 font-mono text-[11px] break-all ">
         {value}
       </code>
     </div>

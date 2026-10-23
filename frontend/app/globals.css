@@ -1,27 +1,287 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------------------
+   Identidade visual
+   ---------------------------------------------------------------------------
+   A paleta vem da logo: magenta #FC1EC8 e ciano #00EBFC sobre preto.
+
+   Essas duas cores sao usadas na INTERFACE - logo, foco, botoes, destaques.
+   Elas NAO vao cruas para os graficos: o ciano tem luminosidade 0,857, muito
+   acima da faixa legivel sobre fundo escuro, e ciano com magenta lado a lado
+   falha na separacao para daltonismo deutan.
+
+   As cores dos graficos sao versoes rebaixadas e reordenadas das mesmas
+   familias, validadas para faixa de luminosidade, contraste, croma e tres
+   tipos de daltonismo.
+   --------------------------------------------------------------------------- */
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-space-grotesk);
+  --font-mono: var(--font-jetbrains-mono);
+  --font-heading: var(--font-space-grotesk);
+
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  --color-brand-magenta: var(--brand-magenta);
+  --color-brand-cyan: var(--brand-cyan);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  --radius: 0.5rem;
+
+  /* Cores puras da logo. Usadas em gradientes e detalhes, nunca como fundo
+     de area grande - saturacao assim cansa a vista rapido. */
+  --brand-magenta: #fc1ec8;
+  --brand-cyan: #00ebfc;
+
+  --background: oklch(0.985 0.002 260);
+  --foreground: oklch(0.16 0.012 265);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.16 0.012 265);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.16 0.012 265);
+
+  --primary: oklch(0.52 0.11 215);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.96 0.004 265);
+  --secondary-foreground: oklch(0.22 0.012 265);
+  --muted: oklch(0.96 0.004 265);
+  --muted-foreground: oklch(0.5 0.012 265);
+  --accent: oklch(0.95 0.015 320);
+  --accent-foreground: oklch(0.22 0.012 265);
+  --destructive: oklch(0.58 0.21 25);
+
+  --border: oklch(0.91 0.005 265);
+  --input: oklch(0.91 0.005 265);
+  --ring: oklch(0.55 0.13 210);
+
+  /* Paleta de graficos - modo claro.
+     Validada: faixa de luminosidade, croma, contraste >= 3:1 e separacao
+     para daltonismo (pior par adjacente Delta E 12,5). */
+  --chart-1: #b81c8a;
+  --chart-2: #b07400;
+  --chart-3: #0a8ea8;
+  --chart-4: #d14343;
+  --chart-5: #2a78d6;
+  --chart-6: #16855e;
+}
+
+.dark {
+  --background: oklch(0.145 0.014 268);
+  --foreground: oklch(0.95 0.005 265);
+  --card: oklch(0.185 0.015 268);
+  --card-foreground: oklch(0.95 0.005 265);
+  --popover: oklch(0.2 0.016 268);
+  --popover-foreground: oklch(0.95 0.005 265);
+
+  --primary: oklch(0.8 0.14 200);
+  --primary-foreground: oklch(0.16 0.02 268);
+  --secondary: oklch(0.26 0.016 268);
+  --secondary-foreground: oklch(0.95 0.005 265);
+  --muted: oklch(0.25 0.015 268);
+  --muted-foreground: oklch(0.68 0.012 265);
+  --accent: oklch(0.28 0.04 320);
+  --accent-foreground: oklch(0.96 0.005 265);
+  --destructive: oklch(0.68 0.19 22);
+
+  --border: oklch(0.99 0 0 / 11%);
+  --input: oklch(0.99 0 0 / 15%);
+  --ring: oklch(0.72 0.14 200);
+
+  /* Paleta de graficos - modo escuro.
+     Mesmas familias, rebaixadas para a faixa do fundo escuro.
+     Pior par adjacente Delta E 13,0 para daltonismo. */
+  --chart-1: #d1309f;
+  --chart-2: #c98500;
+  --chart-3: #17a3b8;
+  --chart-4: #e66767;
+  --chart-5: #3987e5;
+  --chart-6: #199e70;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+
+  /*
+    Numeros com largura fixa em toda a interface.
+    Sem isso, um score indo de 99 para 100 faz o texto ao lado pular.
+  */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  /* Usa a fonte carregada no layout.tsx (Geist), com fallback do sistema. */
-  font-family: var(--font-sans), system-ui, sans-serif;
+/* ---------------------------------------------------------------------------
+   Animacoes proprias
+   --------------------------------------------------------------------------- */
+
+/*
+  Curva de aceleracao usada em tudo.
+  Comeca rapido e desacelera no fim - o movimento parece ter peso, em vez de
+  parar de supetao como a curva linear.
+*/
+@theme {
+  --ease-fg: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes forensicguard-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fg-rise {
+  animation: forensicguard-rise 0.38s var(--ease-fg) both;
+}
+
+/*
+  Entrada em cascata para listas.
+  Cada item recebe `--fg-i` com a propria posicao, e o atraso sai disso. O
+  teto de 12 evita que o decimo-quinto item de uma lista longa demore quase um
+  segundo para aparecer.
+*/
+.fg-stagger > * {
+  animation: forensicguard-rise 0.38s var(--ease-fg) both;
+  animation-delay: calc(min(var(--fg-i, 0), 12) * 45ms);
+}
+
+/*
+  Cartoes reagem ao ponteiro: a borda ganha o tom da marca e o cartao sobe um
+  fio. O movimento e pequeno de proposito - num relatorio com quinze cartoes,
+  um salto grande a cada passagem do mouse vira ruido.
+*/
+.fg-card {
+  transition:
+    border-color 0.2s var(--ease-fg),
+    transform 0.2s var(--ease-fg),
+    box-shadow 0.2s var(--ease-fg);
+}
+
+.fg-card:hover {
+  border-color: color-mix(in oklab, var(--brand-cyan) 35%, var(--border));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px -8px color-mix(in oklab, var(--brand-cyan) 30%, transparent);
+}
+
+/* Realce ao passar o ponteiro em itens de lista e linhas de dados. */
+.fg-row {
+  transition: background-color 0.16s var(--ease-fg);
+}
+
+.fg-row:hover {
+  background-color: color-mix(in oklab, var(--foreground) 4%, transparent);
+}
+
+/* Varredura horizontal do carregamento, sugerindo um arquivo percorrido do
+   inicio ao fim. */
+@keyframes forensicguard-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+.fg-sweep {
+  animation: forensicguard-sweep 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Pulso suave da logo enquanto a analise roda. */
+@keyframes forensicguard-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 14px color-mix(in oklab, var(--brand-cyan) 45%, transparent));
+  }
+}
+
+.fg-pulse {
+  animation: forensicguard-pulse 2s ease-in-out infinite;
+}
+
+/* Brilho da marca, usado no titulo da tela de entrada. */
+.fg-brand-gradient {
+  background: linear-gradient(
+    100deg,
+    var(--brand-magenta) 0%,
+    var(--brand-magenta) 38%,
+    var(--brand-cyan) 62%,
+    var(--brand-cyan) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/*
+  Respeita quem pediu menos movimento no sistema operacional.
+  Animacao continua causa desconforto e enjoo em parte das pessoas, e o
+  navegador expoe essa preferencia justamente para ser obedecida.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .fg-rise,
+  .fg-sweep,
+  .fg-pulse,
+  .fg-stagger > * {
+    animation: none !important;
+  }
+
+  .fg-card,
+  .fg-card:hover,
+  .fg-row {
+    transform: none !important;
+    transition: none !important;
+  }
 }

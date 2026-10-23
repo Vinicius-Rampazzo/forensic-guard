@@ -129,6 +129,14 @@ class FileSchema(BaseModel):
             "files and is never, on its own, evidence of anything."
         ),
     )
+    entropy_blocks: list[float] = Field(
+        default=[],
+        description=(
+            "Entropy of each successive block of the file, in order. Feeds "
+            "the entropy map: a packed or encrypted section shows up as a "
+            "plateau near 8, which the overall average hides."
+        ),
+    )
     hashes: HashesSchema
 
 

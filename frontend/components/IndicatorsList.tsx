@@ -7,13 +7,15 @@
  * evidencia concreta, para que quem le possa conferir e discordar.
  */
 
-import { Badge } from "@/components/Badge";
+import type { CSSProperties } from "react";
+
+import { SeverityBadge } from "@/components/SeverityBadge";
 import type { Indicator } from "@/types/analysis";
 
 export function IndicatorsList({ indicators }: { indicators: Indicator[] }) {
   if (indicators.length === 0) {
     return (
-      <p className="rounded-lg border border-zinc-200 p-4 text-sm text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+      <p className="rounded-lg border p-4 text-sm text-muted-foreground">
         No indicators found. Static triage did not flag anything — which is not
         the same as saying the file is safe.
       </p>
@@ -21,27 +23,30 @@ export function IndicatorsList({ indicators }: { indicators: Indicator[] }) {
   }
 
   return (
-    <ul className="flex flex-col gap-3">
-      {indicators.map((indicator) => (
+    <ul className="fg-stagger flex flex-col gap-3">
+      {indicators.map((indicator, index) => (
         <li
           key={indicator.id}
-          className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
+          // A posicao vira o atraso da animacao: os itens aparecem em
+          // cascata em vez de todos de uma vez.
+          style={{ "--fg-i": index } as CSSProperties}
+          className="fg-card rounded-lg border p-4"
         >
           <div className="flex flex-wrap items-start justify-between gap-2">
             <h4 className="text-sm font-medium">{indicator.title}</h4>
             <div className="flex shrink-0 items-center gap-2">
-              <Badge label={indicator.severity} tone={indicator.severity} />
-              <span className="font-mono text-xs text-zinc-500 tabular-nums dark:text-zinc-400">
+              <SeverityBadge tone={indicator.severity} />
+              <span className="font-mono text-xs text-muted-foreground tabular-nums">
                 {indicator.score > 0 ? `+${indicator.score}` : "0"}
               </span>
             </div>
           </div>
 
-          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="mt-2 text-sm text-muted-foreground">
             {indicator.description}
           </p>
 
-          <p className="mt-2 font-mono text-[11px] text-zinc-400 dark:text-zinc-600">
+          <p className="mt-2 font-mono text-[11px] text-muted-foreground/60">
             {indicator.id}
           </p>
 
@@ -66,10 +71,10 @@ function Evidence({ evidence }: { evidence: Record<string, unknown> }) {
   if (entries.length === 0) return null;
 
   return (
-    <dl className="mt-3 flex flex-col gap-1 rounded border border-zinc-100 bg-zinc-50 p-3 dark:border-zinc-900 dark:bg-zinc-900/40">
+    <dl className="mt-3 flex flex-col gap-1 rounded border bg-muted/40 p-3">
       {entries.map(([key, value]) => (
         <div key={key} className="flex flex-col gap-0.5 sm:flex-row sm:gap-3">
-          <dt className="shrink-0 font-mono text-[11px] text-zinc-500 sm:w-40 dark:text-zinc-400">
+          <dt className="shrink-0 font-mono text-[11px] text-muted-foreground sm:w-40">
             {key}
           </dt>
           <dd className="min-w-0 font-mono text-[11px] break-all">{formatValue(value)}</dd>

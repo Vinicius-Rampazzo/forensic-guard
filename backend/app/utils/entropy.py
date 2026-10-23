@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import math
 from collections import Counter
+from dataclasses import dataclass
 from pathlib import Path
 from typing import BinaryIO
 
@@ -45,6 +46,47 @@ BYTE_VALUES = 256
 
 # Valor maximo teorico da entropia de um byte, em bits.
 MAX_ENTROPY = 8.0
+
+# Em quantos pedacos o arquivo e dividido para o mapa de entropia.
+#
+# 64 colunas e o equilibrio entre resolucao e legibilidade: o suficiente para
+# uma secao empacotada aparecer como um planalto, sem virar ruido visual nem
+# inchar a resposta.
+DEFAULT_PROFILE_BLOCKS = 64
+
+# Tamanho minimo de um bloco do perfil.
+#
+# A entropia de 4 bytes nao significa nada - com tao poucas amostras, qualquer
+# sequencia parece aleatoria. Abaixo deste tamanho o arquivo recebe menos
+# blocos em vez de blocos sem sentido.
+MIN_PROFILE_BLOCK_SIZE = 256
+
+
+@dataclass(frozen=True)
+class EntropyProfile:
+    """Entropia do arquivo inteiro e de cada pedaco dele.
+
+    Attributes:
+        overall: entropia do arquivo completo, de 0 a 8.
+        blocks: entropia de cada pedaco, na ordem em que aparecem no arquivo.
+            Vazio para arquivo vazio.
+
+    Por que os dois juntos
+    ----------------------
+    O valor global e a soma das contagens de todos os blocos - entao calcular
+    os dois exige uma leitura so. Separa-los em duas funcoes custaria um passe
+    inteiro a mais sobre um arquivo que pode ter um gigabyte.
+
+    Por que o mapa importa
+    ----------------------
+    A entropia global de um executavel empacotado fica em torno de 6,5: a
+    media entre o codigo normal e a secao comprimida esconde as duas. O mapa
+    mostra o planalto - a regiao onde o valor salta para perto de 8 - que e
+    exatamente o que um analista procura.
+    """
+
+    overall: float
+    blocks: tuple[float, ...]
 
 
 def compute_entropy(path: Path) -> float:
@@ -61,6 +103,71 @@ def compute_entropy_from_stream(stream: BinaryIO) -> float:
     """Calcula a entropia de um fluxo binario ja aberto."""
     counts = count_byte_frequencies(stream)
     return entropy_from_counts(counts)
+
+
+def compute_entropy_profile(
+    path: Path,
+    block_count: int = DEFAULT_PROFILE_BLOCKS,
+) -> EntropyProfile:
+    """Calcula a entropia global e a de cada pedaco do arquivo.
+
+    Numa unica leitura: as contagens de bytes de todos os blocos somadas dao
+    exatamente a contagem do arquivo inteiro, entao o valor global sai de
+    graca junto com o mapa.
+
+    Args:
+        path: caminho do arquivo.
+        block_count: em quantos pedacos dividir. O numero real pode ser menor
+            quando o arquivo e pequeno demais para blocos significativos.
+
+    Returns:
+        O perfil. Arquivo vazio devolve entropia 0 e nenhum bloco.
+    """
+    size = path.stat().st_size
+
+    if size == 0:
+        return EntropyProfile(overall=0.0, blocks=())
+
+    # Arquivos pequenos recebem menos blocos, nunca blocos minusculos: a
+    # entropia de poucos bytes e um numero sem significado.
+    usable_blocks = max(1, min(block_count, size // MIN_PROFILE_BLOCK_SIZE))
+    block_size = max(MIN_PROFILE_BLOCK_SIZE, -(-size // usable_blocks))
+
+    total_counts: Counter[int] = Counter()
+    block_entropies: list[float] = []
+
+    with path.open("rb") as stream:
+        current: Counter[int] = Counter()
+        bytes_in_block = 0
+
+        for chunk in read_chunks(stream):
+            # Um bloco do perfil pode ser maior ou menor que um bloco de
+            # leitura, entao o chunk e consumido em fatias ate acabar.
+            position = 0
+
+            while position < len(chunk):
+                remaining = block_size - bytes_in_block
+                slice_ = chunk[position : position + remaining]
+
+                current.update(slice_)
+                total_counts.update(slice_)
+
+                bytes_in_block += len(slice_)
+                position += len(slice_)
+
+                if bytes_in_block >= block_size:
+                    block_entropies.append(entropy_from_counts(current))
+                    current = Counter()
+                    bytes_in_block = 0
+
+        # O ultimo bloco costuma ficar incompleto; ele conta do mesmo jeito.
+        if bytes_in_block > 0:
+            block_entropies.append(entropy_from_counts(current))
+
+    return EntropyProfile(
+        overall=entropy_from_counts(total_counts),
+        blocks=tuple(block_entropies),
+    )
 
 
 def count_byte_frequencies(stream: BinaryIO) -> Counter[int]:

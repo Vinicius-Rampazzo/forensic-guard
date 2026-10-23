@@ -46,6 +46,13 @@ export interface FileOverview {
   size: number;
   /** Entropia de Shannon, de 0 a 8. Acima de 7,5 indica compressao ou cifragem. */
   entropy: number;
+  /**
+   * Entropia de cada bloco do arquivo, em ordem.
+   *
+   * Alimenta o mapa de entropia. Uma secao empacotada aparece como planalto
+   * perto de 8 - algo que a media global esconde.
+   */
+  entropy_blocks: number[];
   hashes: Hashes;
 }
 

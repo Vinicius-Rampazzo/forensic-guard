@@ -1,0 +1,120 @@
+{
+  "app": {
+    "name": "ForensicGuard",
+    "tagline": "Analisador de Evidências Digitais",
+    "apiOnline": "API online",
+    "apiOffline": "API offline",
+    "apiChecking": "verificando API",
+    "analyseAnother": "Analisar outro arquivo",
+    "theme": "Tema de cores",
+    "language": "Idioma",
+    "backendDownTitle": "O backend não está respondendo",
+    "backendDownBody": "Inicie com {command} e recarregue esta página.",
+    "privacyLine": "Privacidade em primeiro lugar — sem banco de dados, sem conta, sem armazenamento permanente.",
+    "disclaimerLine": "Triagem estática baseada em indicadores e heurísticas. Não é um veredito definitivo de malware ou phishing."
+  },
+  "landing": {
+    "headline": "Descubra o que um arquivo realmente é",
+    "subheadline": "Triagem forense que examina arquivos, imagens e e-mails sem nunca abri-los.",
+    "enter": "Iniciar análise",
+    "formats": "formatos reconhecidos",
+    "rules": "regras de risco",
+    "tests": "testes no backend",
+    "noDatabase": "sem banco de dados",
+    "noAccount": "sem cadastro",
+    "noUpload": "nada sai da sua máquina",
+    "scrollHint": "Tudo roda localmente"
+  },
+  "upload": {
+    "question": "Este arquivo merece uma olhada mais atenta?",
+    "intro": "Solte um arquivo, uma imagem ou um e-mail. O ForensicGuard examina sem abrir, reúne indicadores objetivos e explica cada ponto que atribui.",
+    "drop": "Solte a evidência aqui",
+    "release": "Solte para analisar",
+    "or": "ou selecione um arquivo do seu computador",
+    "select": "Selecionar arquivo",
+    "andMore": "e outros",
+    "limit": "Até {size} por arquivo",
+    "analysing": "Analisando evidência…"
+  },
+  "capabilities": {
+    "file": "Qualquer arquivo",
+    "image": "Imagens",
+    "email": "E-mails (.eml)",
+    "fileItems": "MD5, SHA-1, SHA-256, SHA-512|Entropia de Shannon e mapa de entropia|Formato real pelos magic bytes|Extensão contra assinatura real|URLs, IPs, caminhos, LOLBins",
+    "imageItems": "Dimensões e modo de cor|Metadados EXIF completos|Marca e modelo da câmera|Software de edição|Coordenadas GPS",
+    "emailItems": "Cabeçalhos e cadeia de Received|SPF, DKIM e DMARC|Verificação de Reply-To e Return-Path|Links que escondem o destino|Anexos analisados recursivamente"
+  },
+  "privacy": {
+    "title": "O que acontece com o seu arquivo",
+    "local": "Ele nunca sai da sua máquina — a análise roda no backend que você mesmo iniciou.",
+    "noExecution": "Nada é executado. Nenhuma macro roda, nenhuma imagem é decodificada, nenhum endereço é contatado.",
+    "temporary": "Ele é gravado num arquivo temporário com nome gerado e apagado ao fim da análise — inclusive quando ela falha.",
+    "noHistory": "Sem banco de dados, sem conta, sem histórico."
+  },
+  "risk": {
+    "title": "Pontuação de risco",
+    "explanation": "Cada indicador que dispara soma pontos, limitados a 100. Todos carregam a evidência que os justificou — um número sem justificativa é opinião, não achado.",
+    "low": "baixo",
+    "medium": "médio",
+    "high": "alto",
+    "critical": "crítico",
+    "info": "info",
+    "noIndicators": "Nenhum indicador encontrado",
+    "scoredIndicators": "{count, plural, =1 {# indicador pontuado} other {# indicadores pontuados}}",
+    "informational": "{count} informativo(s)"
+  },
+  "report": {
+    "indicators": "Indicadores",
+    "overview": "Visão geral",
+    "hashes": "Hashes",
+    "image": "Imagem",
+    "headers": "Cabeçalhos",
+    "links": "Links",
+    "attachments": "Anexos",
+    "strings": "Strings",
+    "charts": "Gráficos",
+    "export": "Exportar",
+    "unrecognised": "formato não reconhecido"
+  },
+  "charts": {
+    "scoreComposition": "Composição da pontuação",
+    "scoreCompositionHint": "Quanto cada indicador contribuiu para o total.",
+    "artifacts": "Artefatos por categoria",
+    "artifactsHint": "Quantos padrões de cada tipo foram reconhecidos dentro do arquivo.",
+    "entropyMap": "Mapa de entropia",
+    "entropyMapHint": "Entropia de cada bloco, em ordem. Uma seção empacotada ou cifrada aparece como um planalto perto de 8 — algo que a média global esconde.",
+    "entropyAxis": "bits por byte",
+    "positionAxis": "posição no arquivo",
+    "noData": "Dados insuficientes para este gráfico.",
+    "severity": "Distribuição por severidade",
+    "severityHint": "Como os achados se distribuem por gravidade.",
+    "totalIndicators": "{count} indicadores no total",
+    "peak": "pico",
+    "average": "média",
+    "aboveThreshold": "acima de 7,2",
+    "found": "encontrados",
+    "points": "pontos",
+    "sum": "soma"
+  },
+  "errors": {
+    "failedTitle": "A análise falhou",
+    "tryAnother": "Tentar outro arquivo",
+    "tooLarge": "Este arquivo tem {size}, e o servidor aceita até {limit}. O limite é configurável em backend/.env pela variável MAX_UPLOAD_SIZE.",
+    "generic": "A análise falhou."
+  },
+  "export": {
+    "json": "Baixar JSON",
+    "html": "Baixar relatório HTML",
+    "hint": "O relatório HTML é um arquivo único e autocontido. Abre em qualquer navegador, sem servidor e sem conexão com a internet."
+  },
+  "overview": {
+    "size": "Tamanho",
+    "entropy": "Entropia",
+    "detected": "Detectado",
+    "indicators": "Indicadores",
+    "strings": "Strings",
+    "weakSignature": "assinatura fraca",
+    "strongSignature": "assinatura forte",
+    "notRecognised": "não reconhecido"
+  }
+}
