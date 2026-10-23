@@ -1,17 +1,13 @@
 {
   "app": {
     "name": "ForensicGuard",
-    "tagline": "Analisador de Evidências Digitais",
-    "apiOnline": "API online",
     "apiOffline": "API offline",
-    "apiChecking": "verificando API",
     "analyseAnother": "Analisar outro arquivo",
-    "theme": "Tema de cores",
-    "language": "Idioma",
     "backendDownTitle": "O backend não está respondendo",
     "backendDownBody": "Inicie com {command} e recarregue esta página.",
     "privacyLine": "Privacidade em primeiro lugar — sem banco de dados, sem conta, sem armazenamento permanente.",
-    "disclaimerLine": "Triagem estática baseada em indicadores e heurísticas. Não é um veredito definitivo de malware ou phishing."
+    "disclaimerLine": "Triagem estática baseada em indicadores e heurísticas. Não é um veredito definitivo de malware ou phishing.",
+    "analyse": "Analisar"
   },
   "landing": {
     "headline": "Descubra o que um arquivo realmente é",
@@ -23,7 +19,7 @@
     "noDatabase": "sem banco de dados",
     "noAccount": "sem cadastro",
     "noUpload": "nada sai da sua máquina",
-    "scrollHint": "Tudo roda localmente"
+    "scrollHint": "Veja como funciona"
   },
   "upload": {
     "question": "Este arquivo merece uma olhada mais atenta?",
@@ -141,5 +137,43 @@
     "actuallyIs": "na verdade é",
     "privateHost": "Este endereço pertence a uma rede privada ou de loopback — tráfego interno comum, não evasão.",
     "couldNotParse": "Não foi possível ler esta URL"
+  },
+  "sections": {
+    "pipelineTitle": "Cinco camadas de análise, e nenhuma delas abre o arquivo",
+    "hashTitle": "Impressão digital",
+    "hashBody": "MD5, SHA-1, SHA-256 e SHA-512 numa única leitura em blocos. Identifica o arquivo sem revelar o conteúdo.",
+    "entropyTitle": "Entropia",
+    "entropyBody": "Entropia de Shannon global e por bloco. Uma seção empacotada aparece como um planalto que a média esconde.",
+    "signatureTitle": "Formato real",
+    "signatureBody": "33 assinaturas de magic bytes. A extensão é uma afirmação; os primeiros bytes são o fato.",
+    "stringsTitle": "Artefatos",
+    "stringsBody": "Texto legível em ASCII e UTF-16 e, dentro dele, URLs, IPs, caminhos e referências a interpretadores de comando.",
+    "scoreTitle": "Pontuação de risco",
+    "scoreBody": "16 regras traduzem observações em pontos, cada uma carregando a evidência que a disparou.",
+    "detectTitle": "Quatro tipos de evidência, uma única escala de risco",
+    "fileTitle": "Qualquer arquivo",
+    "fileItems": "Executável disfarçado de documento ou imagem|Extensão que contradiz a assinatura real|Entropia inesperada para o formato detectado|Referências a PowerShell, certutil e outros LOLBins|URLs, endereços IP e caminhos do Windows embutidos",
+    "imageTitle": "Imagens",
+    "imageItems": "Marca, modelo e momento da captura|Software de edição deixado nos metadados|Coordenadas GPS, com link para o mapa|Bombas de descompressão, detectadas sem decodificar um pixel|Dimensões, modo de cor e todas as tags EXIF legíveis",
+    "emailTitle": "E-mails",
+    "emailItems": "Veredito de SPF, DKIM e DMARC como o servidor receptor registrou|Reply-To ou Return-Path apontando para outro lugar|Links que exibem um endereço e levam a outro|Cada anexo analisado recursivamente, com nota própria|A cadeia completa de Received, um dos poucos cabeçalhos que o remetente não escreve",
+    "urlTitle": "Links",
+    "urlItems": "Credenciais escondendo o host real antes do @|Alfabetos misturados, um caractere cirílico dentro de um nome latino|Domínios de topo que colidem com extensões de arquivo, como .zip|Extensões duplas como fatura.pdf.exe|O endereço dissecado parte por parte, mostrando para onde leva de verdade",
+    "exampleTitle": "Cada ponto vem com a evidência que o justificou",
+    "exampleCaption": "invoice.jpg, um executável renomeado",
+    "safetyTitle": "Projetado para arquivos que são hostis por definição",
+    "localTitle": "Roda na sua máquina",
+    "localBody": "Sem conta, sem banco de dados, sem envio para terceiros. O backend é o que você mesmo iniciou, e a evidência é apagada assim que a análise termina, inclusive quando ela falha.",
+    "noExecutionTitle": "Nada é executado",
+    "noExecutionBody": "Nenhuma macro roda, nenhuma imagem é decodificada, nenhum arquivo compactado é extraído. A leitura é feita em blocos de 64 KB, e todo parser que toca entrada hostil tem teto e tratamento de erro.",
+    "noNetworkTitle": "Nada é contatado",
+    "noNetworkBody": "Sem consulta de DNS, sem certificado, sem acessar a página. Consultar um endereço suspeito avisa quem o montou que ele está sendo investigado — por isso a análise fica estrutural.",
+    "limitsTitle": "O que esta ferramenta não faz",
+    "limitsBody": "O ForensicGuard faz triagem estática. Ele responde se algo merece uma olhada mais atenta, nunca se é malware. Resultado limpo significa que nada se destacou — o que não é o mesmo que ser seguro.",
+    "limitsItems": "Não executa o arquivo em ambiente isolado|Não consulta serviços de reputação|Não descriptografa nem extrai arquivos compactados|Não substitui um antivírus|Não emite veredito, apenas indicadores|Não guarda histórico do que você analisou"
+  },
+  "meta": {
+    "title": "ForensicGuard — Analisador de Evidências Digitais",
+    "description": "Triagem forense de código aberto para arquivos, imagens, e-mails e links. Hashes, metadados, indicadores explicáveis e uma pontuação de risco, calculados na sua máquina sem nunca abrir o arquivo."
   }
 }

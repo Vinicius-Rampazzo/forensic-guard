@@ -63,31 +63,67 @@
 :root {
   --radius: 0.5rem;
 
+  /* Alturas da barra de cima.
+     A barra e mais alta no topo da pagina e encolhe assim que a rolagem
+     comeca.
+
+     Tudo que gruda na rolagem - o resumo do relatorio, a navegacao lateral -
+     usa a altura ENCOLHIDA, e nao a do topo. O motivo: quando algo chega ao
+     ponto de grudar, a pessoa ja rolou, e a barra ja encolheu. Usar a altura
+     do topo deixaria uma faixa vazia permanente embaixo dela. */
+  --app-header-height: 3.5rem;
+  --app-header-height-top: 4.5rem;
+
   /* Cores puras da logo. Usadas em gradientes e detalhes, nunca como fundo
      de area grande - saturacao assim cansa a vista rapido. */
   --brand-magenta: #fc1ec8;
   --brand-cyan: #00ebfc;
 
-  --background: oklch(0.985 0.002 260);
-  --foreground: oklch(0.16 0.012 265);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.16 0.012 265);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.16 0.012 265);
+  /* Versoes "de tinta" das cores da marca: a variacao que da para DESENHAR
+     sobre o fundo deste tema.
 
-  --primary: oklch(0.52 0.11 215);
+     O ciano da logo tem luminosidade 0,857 - sobre branco ele simplesmente
+     some. Fios de luz, bordas animadas e varreduras usam estas variaveis, e
+     nunca as cores puras, para existirem nos dois temas. Sao as mesmas cores
+     ja validadas para a paleta de graficos. */
+  --brand-cyan-ink: #0a8ea8;
+  --brand-magenta-ink: #b81c8a;
+
+  /* Tema claro: papel, nao holofote.
+     ------------------------------------------------------------------------
+     A primeira versao usava branco puro no cartao (L 1,0) sobre um fundo quase
+     branco (L 0,985). Numa ferramenta que se le por minutos seguidos - tabela
+     de hashes, lista de strings - isso cansa: o olho trabalha contra uma
+     superficie que devolve quase toda a luz da tela.
+
+     Agora o fundo e um cinza frio claro e o cartao e um quase-branco. A
+     diferenca de 3,5 pontos de luminosidade entre os dois e o que da relevo
+     aos paineis sem precisar de sombra pesada.
+
+     Nada aqui e neutro puro: todos levam um tracinho de croma na matiz 265
+     (azul frio), que e a mesma do tema escuro. Cinza perfeitamente neutro
+     parece sujo ao lado de qualquer cor saturada - e esta interface tem
+     magenta e ciano por toda parte. */
+  --background: oklch(0.945 0.005 265);
+  --foreground: oklch(0.21 0.015 265);
+  --card: oklch(0.98 0.004 265);
+  --card-foreground: oklch(0.21 0.015 265);
+  --popover: oklch(0.98 0.004 265);
+  --popover-foreground: oklch(0.21 0.015 265);
+
+  --primary: oklch(0.5 0.11 215);
   --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.96 0.004 265);
-  --secondary-foreground: oklch(0.22 0.012 265);
-  --muted: oklch(0.96 0.004 265);
-  --muted-foreground: oklch(0.5 0.012 265);
-  --accent: oklch(0.95 0.015 320);
-  --accent-foreground: oklch(0.22 0.012 265);
-  --destructive: oklch(0.58 0.21 25);
+  --secondary: oklch(0.915 0.007 265);
+  --secondary-foreground: oklch(0.25 0.015 265);
+  --muted: oklch(0.915 0.007 265);
+  --muted-foreground: oklch(0.47 0.018 265);
+  --accent: oklch(0.915 0.02 320);
+  --accent-foreground: oklch(0.25 0.015 265);
+  --destructive: oklch(0.55 0.21 25);
 
-  --border: oklch(0.91 0.005 265);
-  --input: oklch(0.91 0.005 265);
-  --ring: oklch(0.55 0.13 210);
+  --border: oklch(0.875 0.008 265);
+  --input: oklch(0.875 0.008 265);
+  --ring: oklch(0.53 0.13 210);
 
   /* Paleta de graficos - modo claro.
      Validada: faixa de luminosidade, croma, contraste >= 3:1 e separacao
@@ -121,6 +157,11 @@
   --border: oklch(0.99 0 0 / 11%);
   --input: oklch(0.99 0 0 / 15%);
   --ring: oklch(0.72 0.14 200);
+
+  /* Sobre fundo escuro as cores puras da logo sao exatamente o que se quer
+     desenhar - entao a "tinta" e a propria cor. */
+  --brand-cyan-ink: var(--brand-cyan);
+  --brand-magenta-ink: var(--brand-magenta);
 
   /* Paleta de graficos - modo escuro.
      Mesmas familias, rebaixadas para a faixa do fundo escuro.
@@ -193,26 +234,32 @@
 }
 
 /*
-  Cartoes reagem ao ponteiro: a borda ganha o tom da marca e o cartao sobe um
-  fio. O movimento e pequeno de proposito - num relatorio com quinze cartoes,
-  um salto grande a cada passagem do mouse vira ruido.
+  Cartoes reagem ao ponteiro so com luz: a borda ganha o tom da marca e nasce
+  uma sombra baixa.
+
+  O deslocamento vertical saiu daqui. Era de um pixel, mas num relatorio com
+  quinze cartoes encostados o olho percorre varios em sequencia, e cada um
+  pulando ao ser tocado vira um tremor continuo - desagradavel justamente
+  porque e pequeno demais para parecer intencional.
+
+  A transicao tambem ficou quase duas vezes mais longa. Reacao de hover curta
+  demais chega como um estalo; esticada, ela e percebida como o cartao
+  "acendendo".
 */
 .fg-card {
   transition:
-    border-color 0.2s var(--ease-fg),
-    transform 0.2s var(--ease-fg),
-    box-shadow 0.2s var(--ease-fg);
+    border-color 0.38s var(--ease-fg),
+    box-shadow 0.38s var(--ease-fg);
 }
 
 .fg-card:hover {
-  border-color: color-mix(in oklab, var(--brand-cyan) 35%, var(--border));
-  transform: translateY(-1px);
-  box-shadow: 0 4px 20px -8px color-mix(in oklab, var(--brand-cyan) 30%, transparent);
+  border-color: color-mix(in oklab, var(--brand-cyan-ink) 28%, var(--border));
+  box-shadow: 0 2px 18px -12px color-mix(in oklab, var(--brand-cyan-ink) 40%, transparent);
 }
 
 /* Realce ao passar o ponteiro em itens de lista e linhas de dados. */
 .fg-row {
-  transition: background-color 0.16s var(--ease-fg);
+  transition: background-color 0.3s var(--ease-fg);
 }
 
 .fg-row:hover {
@@ -265,6 +312,165 @@
   color: transparent;
 }
 
+/* ---------------------------------------------------------------------------
+   Efeitos da pagina institucional
+   --------------------------------------------------------------------------- */
+
+/*
+  Texto que vai ser decodificado comeca invisivel.
+
+  O HTML chega do servidor com o texto certo, e so depois da hidratacao o
+  JavaScript consegue embaralha-lo. Sem isto, o que se ve ao recarregar e:
+  texto limpo, pausa, e entao o efeito - que parece defeito, nao animacao.
+
+  `visibility` e nao `opacity` nem `display`: so ela esconde mantendo o
+  elemento no lugar, com o tamanho exato. A pagina nunca muda de altura por
+  causa disto, e a caixa pode ser medida enquanto ainda esta escondida.
+
+  O JavaScript devolve a visibilidade no primeiro quadro que ja tem ruido
+  escrito, entao o texto limpo nunca aparece antes do efeito.
+
+  A animacao de 0s com atraso e a rede de seguranca: se o JavaScript falhar,
+  demorar ou estiver desligado, o texto aparece sozinho em 700ms. Nenhum
+  conteudo fica refem de uma animacao de enfeite.
+*/
+.fg-scramble {
+  visibility: hidden;
+  animation: forensicguard-scramble-failsafe 0s linear 700ms forwards;
+}
+
+@keyframes forensicguard-scramble-failsafe {
+  to {
+    visibility: visible;
+  }
+}
+
+/*
+  Luz percorrendo a borda do cartao.
+
+  O truque: um gradiente CONICO girando atras do cartao, recortado por uma
+  mascara que deixa passar so a moldura de 1px. O gradiente e quase todo
+  transparente, entao o que se ve e um ponto de luz dando a volta.
+
+  `@property` e o que torna isso possivel. Sem declarar o angulo como tipo
+  `<angle>`, o navegador trata a variavel como texto e nao sabe interpolar
+  entre 0deg e 360deg - a animacao simplesmente nao acontece.
+*/
+@property --fg-beam-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes forensicguard-beam {
+  to {
+    --fg-beam-angle: 360deg;
+  }
+}
+
+.fg-beam::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--fg-beam-angle),
+    transparent 0deg,
+    var(--brand-cyan-ink) 18deg,
+    var(--brand-magenta-ink) 32deg,
+    transparent 58deg
+  );
+  /* Recorta o preenchimento e deixa so a moldura. As duas mascaras se anulam
+     na area interna; sobra a faixa de 1px do padding. */
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  /* O atraso negativo entra pelo JSX e comeca cada cartao num ponto
+     diferente da volta - tres luzes em sincronia pareceriam um enfeite,
+     fora de fase parecem tres processos independentes. */
+  animation: forensicguard-beam 6s linear infinite;
+  animation-delay: var(--fg-beam-delay, 0s);
+  opacity: 0.45;
+  transition: opacity 0.38s var(--ease-fg);
+}
+
+.fg-beam:hover::after {
+  opacity: 1;
+}
+
+/*
+  Fio de luz no topo do cartao, preenchendo da esquerda para a direita quando
+  o ponteiro chega - como uma barra de progresso de uma etapa concluida.
+
+  `scaleX` em vez de animar `width`: transformacao e composta pela GPU e nao
+  obriga o navegador a recalcular o tamanho dos elementos vizinhos.
+*/
+.fg-edge::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    var(--brand-magenta-ink),
+    var(--brand-cyan-ink)
+  );
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.5s var(--ease-fg);
+}
+
+.fg-edge:hover::before {
+  transform: scaleX(1);
+}
+
+/*
+  Aceno vertical da seta que avisa que ha conteudo abaixo da dobra.
+  Numa tela de entrada que ocupa a janela inteira, nada indica que a pagina
+  continua - e quem nao rola nunca ve o resto.
+*/
+@keyframes forensicguard-cue {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translateY(5px);
+    opacity: 1;
+  }
+}
+
+.fg-cue {
+  animation: forensicguard-cue 1.8s ease-in-out infinite;
+}
+
+/* Cursor de bloco piscando, ao fim do exemplo em forma de terminal. */
+@keyframes forensicguard-caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.fg-caret {
+  animation: forensicguard-caret 1.1s steps(1, end) infinite;
+}
+
 /*
   Respeita quem pediu menos movimento no sistema operacional.
   Animacao continua causa desconforto e enjoo em parte das pessoas, e o
@@ -274,7 +480,27 @@
   .fg-rise,
   .fg-sweep,
   .fg-pulse,
+  .fg-cue,
+  .fg-caret,
+  .fg-beam::after,
   .fg-stagger > * {
+    animation: none !important;
+  }
+
+  /* A borda animada vira uma borda parada, e o fio de luz some. Os dois sao
+     decoracao: nenhuma informacao se perde ao desliga-los. */
+  .fg-edge::before,
+  .fg-edge:hover::before {
+    transition: none !important;
+    transform: scaleX(1);
+  }
+
+  /* ATENCAO ao mexer aqui: o texto decodificado precisa de `visibility` junto
+     com `animation: none`. Desligar so a animacao mataria a rede de seguranca
+     que o revela - e o texto ficaria invisivel para sempre justamente para
+     quem pediu menos movimento. */
+  .fg-scramble {
+    visibility: visible;
     animation: none !important;
   }
 

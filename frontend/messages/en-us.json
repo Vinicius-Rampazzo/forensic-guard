@@ -1,17 +1,13 @@
 {
   "app": {
     "name": "ForensicGuard",
-    "tagline": "Digital Evidence Analyzer",
-    "apiOnline": "API online",
     "apiOffline": "API offline",
-    "apiChecking": "checking API",
     "analyseAnother": "Analyse another file",
-    "theme": "Colour theme",
-    "language": "Language",
     "backendDownTitle": "The backend is not responding",
     "backendDownBody": "Start it with {command} and reload this page.",
     "privacyLine": "Privacy first — no database, no account, no permanent evidence storage.",
-    "disclaimerLine": "Static triage based on indicators and heuristics. Not a definitive malware or phishing verdict."
+    "disclaimerLine": "Static triage based on indicators and heuristics. Not a definitive malware or phishing verdict.",
+    "analyse": "Analyse"
   },
   "landing": {
     "headline": "Know what a file really is",
@@ -23,7 +19,7 @@
     "noDatabase": "no database",
     "noAccount": "no account",
     "noUpload": "never leaves your machine",
-    "scrollHint": "Everything runs locally"
+    "scrollHint": "See how it works"
   },
   "upload": {
     "question": "Does this file deserve a closer look?",
@@ -141,5 +137,43 @@
     "actuallyIs": "actually is",
     "privateHost": "This address belongs to a private or loopback network — ordinary internal traffic, not evasion.",
     "couldNotParse": "Could not read this URL"
+  },
+  "sections": {
+    "pipelineTitle": "Five passes over the evidence, and none of them opens the file",
+    "hashTitle": "Fingerprint",
+    "hashBody": "MD5, SHA-1, SHA-256 and SHA-512 in a single streaming pass. Identifies the file without revealing its contents.",
+    "entropyTitle": "Entropy",
+    "entropyBody": "Shannon entropy overall and per block. A packed section shows up as a plateau the average hides.",
+    "signatureTitle": "True format",
+    "signatureBody": "33 magic byte signatures. The extension is a claim; the first bytes are the fact.",
+    "stringsTitle": "Artifacts",
+    "stringsBody": "Readable text in ASCII and UTF-16, then URLs, IPs, paths and references to command interpreters.",
+    "scoreTitle": "Risk score",
+    "scoreBody": "16 rules turn observations into points, each carrying the evidence that triggered it.",
+    "detectTitle": "Four kinds of evidence, a single risk scale",
+    "fileTitle": "Any file",
+    "fileItems": "Executable disguised as a document or image|Extension that contradicts the real signature|Entropy unexpected for the detected format|References to PowerShell, certutil and other LOLBins|Embedded URLs, IP addresses and Windows paths",
+    "imageTitle": "Images",
+    "imageItems": "Camera make, model and capture time|Editing software left in the metadata|GPS coordinates, with a link to the map|Decompression bombs, caught without decoding a pixel|Dimensions, colour mode and every readable EXIF tag",
+    "emailTitle": "Emails",
+    "emailItems": "SPF, DKIM and DMARC verdicts as the receiving server recorded them|Reply-To or Return-Path pointing elsewhere|Links that display one address and lead to another|Each attachment analysed recursively, with its own score|The full Received chain, one of the few headers a sender cannot write",
+    "urlTitle": "Links",
+    "urlItems": "Credentials hiding the real host before the @|Mixed alphabets, a Cyrillic character inside a Latin name|Top-level domains that collide with file extensions, like .zip|Double extensions such as invoice.pdf.exe|The address dissected part by part, showing where it truly leads",
+    "exampleTitle": "Every point comes with the evidence behind it",
+    "exampleCaption": "invoice.jpg, a renamed executable",
+    "safetyTitle": "Built for files that are hostile by definition",
+    "localTitle": "Runs on your machine",
+    "localBody": "No account, no database, no upload to anyone else. The backend is the one you started yourself, and the evidence is deleted the moment the analysis ends, including when it fails.",
+    "noExecutionTitle": "Nothing is executed",
+    "noExecutionBody": "No macro runs, no image is decoded, no archive is extracted. Files are read in 64 KB blocks, and every parser that touches hostile input is wrapped and bounded.",
+    "noNetworkTitle": "Nothing is contacted",
+    "noNetworkBody": "No DNS lookup, no certificate fetch, no page request. Querying a suspicious address tells whoever built it that they are being investigated, so the analysis stays structural.",
+    "limitsTitle": "What this tool does not do",
+    "limitsBody": "ForensicGuard performs static triage. It answers whether something deserves a closer look, never whether it is malware. A clean result means nothing stood out, which is not the same as being safe.",
+    "limitsItems": "Does not run the file in a sandbox|Does not query reputation services|Does not decrypt or unpack archives|Does not replace an antivirus|Does not issue verdicts, only indicators|Does not keep history of what you analysed"
+  },
+  "meta": {
+    "title": "ForensicGuard — Digital Evidence Analyzer",
+    "description": "Open-source forensic triage for files, images, emails and links. Hashes, metadata, explainable indicators and a risk score, computed on your own machine without ever opening the file."
   }
 }

@@ -29,7 +29,7 @@ import {
   ScrollText,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AnalysisCharts } from "@/components/AnalysisCharts";
 import { AttachmentList } from "@/components/AttachmentList";
@@ -63,9 +63,39 @@ export function AnalysisReport({ result }: { result: AnalysisResult }) {
 
   const active = sections.find((section) => section.id === activeId) ?? sections[0];
 
+  const rootRef = useRef<HTMLDivElement>(null);
+  const summaryRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    const summary = summaryRef.current;
+
+    if (!root || !summary) return;
+
+    /*
+      A navegacao lateral tambem gruda na rolagem, e precisa parar logo abaixo
+      do resumo - nao atras dele. Mas a altura do resumo nao e fixa: o nome do
+      arquivo quebra em mais linhas conforme o comprimento e a largura da
+      janela.
+
+      Entao ela e medida e publicada como variavel CSS, que a navegacao soma no
+      `top` dela. ResizeObserver e nao estado do React: a altura e uma medida
+      do layout, e devolve-la ao React so provocaria uma re-renderizacao para
+      escrever de volta no mesmo DOM de onde ela veio.
+    */
+    const observer = new ResizeObserver(() => {
+      root.style.setProperty("--fg-summary-height", `${summary.offsetHeight}px`);
+    });
+
+    observer.observe(summary);
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="flex flex-col gap-6">
+    <div ref={rootRef} className="flex flex-col gap-6">
       <RiskSummary
+        ref={summaryRef}
         filename={result.filename}
         risk={result.risk}
         detection={result.detection}
@@ -106,7 +136,15 @@ function SectionNav({
     // No celular vira uma fileira rolavel; a partir de lg, coluna fixa.
     <nav
       aria-label="Report sections"
-      className="flex gap-1 overflow-x-auto border-b pb-2 lg:sticky lg:top-24 lg:h-fit lg:flex-col lg:overflow-visible lg:border-b-0 lg:pb-0"
+      /*
+        Gruda abaixo do resumo, nao atras dele.
+
+        A conta e: a barra de cima, mais o respiro que o resumo deixa, mais a
+        altura do proprio resumo, mais um respiro. `--fg-summary-height` e
+        escrita pelo ResizeObserver la em cima; o `0px` de reserva vale para o
+        primeiro quadro, antes da primeira medicao.
+      */
+      className="flex gap-1 overflow-x-auto border-b pb-2 lg:sticky lg:top-[calc(var(--app-header-height)+0.75rem+var(--fg-summary-height,0px)+1rem)] lg:h-fit lg:flex-col lg:overflow-visible lg:border-b-0 lg:pb-0"
     >
       {sections.map((section) => {
         const isActive = section.id === activeId;

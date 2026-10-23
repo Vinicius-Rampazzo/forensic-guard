@@ -6,10 +6,23 @@
  * todo painel do relatorio tem a mesma forma - titulo, uma linha de contexto,
  * e uma lista de rotulo/valor. Escrever isso uma vez evita repetir cinco
  * elementos em onze arquivos.
+ *
+ * E e esse ganho que permite a decodificacao do titulo entrar em TODO painel
+ * do relatorio mexendo num arquivo so.
+ *
+ * O que NAO se decodifica
+ * -----------------------
+ * Rotulo embaralha; valor nao. Um hash, um tamanho ou uma pontuacao piscando
+ * como outro numero antes de assentar - mesmo por meio segundo - e uma
+ * ferramenta de pericia mentindo de brincadeira. O efeito fica restrito ao
+ * texto que descreve o dado, nunca ao dado.
  */
+
+"use client";
 
 import type { ReactNode } from "react";
 
+import { ScrambleText } from "@/components/ScrambleText";
 import {
   Card as ShadcnCard,
   CardContent,
@@ -42,7 +55,7 @@ export function Card({ title, hint, action, children }: SectionCardProps) {
             className="h-3.5 w-0.5 shrink-0 rounded-full"
             style={{ background: "var(--brand-magenta)" }}
           />
-          {title}
+          <ScrambleText text={title} />
         </CardTitle>
         {hint && <CardDescription className="text-xs">{hint}</CardDescription>}
         {action}

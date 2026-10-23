@@ -25,6 +25,8 @@ suspicious indicators, metadata anomalies and potential security threats.
 | Layer | Technology |
 | --- | --- |
 | Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS 4 |
+| Interface | shadcn/ui, Lucide icons, Recharts, Motion |
+| Localisation | next-intl — English and Brazilian Portuguese |
 | Backend | Python 3.12+, FastAPI, Pydantic, Uvicorn |
 | Forensics | hashlib, puremagic, Pillow |
 | Tests | pytest |
@@ -194,9 +196,21 @@ read the `Local:` line for the address actually in use.
 
 Open http://localhost:3000 in a browser.
 
-The page must show the **API online** badge in green. If it shows **API
-offline**, the frontend is running but cannot reach the backend — check that
-step 3 is still running in the other terminal.
+The address will not stay as typed: the interface carries the language in the
+URL, so `/` redirects to `/en-us` or `/pt-br`. The choice comes from the
+`NEXT_LOCALE` cookie if one exists, otherwise from the browser's own language
+setting. The language button in the header switches between the two and keeps
+you on the same page.
+
+| Address | Page |
+| --- | --- |
+| http://localhost:3000/en-us | Landing page, in English |
+| http://localhost:3000/pt-br | Landing page, in Portuguese |
+| http://localhost:3000/en-us/analyze | The analysis tool |
+
+The header shows a red **API offline** badge when the frontend cannot reach the
+backend; there is no badge while everything is fine. If the badge appears,
+check that step 3 is still running in the other terminal.
 
 Two more addresses worth opening:
 

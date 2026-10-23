@@ -34,9 +34,9 @@ export function UrlList({ links, urls }: UrlListProps) {
           hint="The displayed address does not match the destination. This is the defining technique of phishing."
         >
           <ul className="flex flex-col gap-3">
-            {misleading.map((link) => (
+            {misleading.map((link, index) => (
               <li
-                key={`${link.url}-${link.display_text}`}
+                key={`${index}-${link.url}`}
                 className="rounded border border-red-500/30 bg-red-500/5 p-3"
               >
                 <div className="flex flex-col gap-1">
@@ -54,8 +54,8 @@ export function UrlList({ links, urls }: UrlListProps) {
           <p className="text-sm text-muted-foreground">No other links found.</p>
         ) : (
           <ul className="flex flex-col gap-2">
-            {honest.map((link) => (
-              <li key={`${link.url}-${link.display_text}`} className="flex flex-col gap-0.5">
+            {honest.map((link, index) => (
+              <li key={`${index}-${link.url}`} className="flex flex-col gap-0.5">
                 {link.display_text && (
                   <span className="text-xs text-muted-foreground">
                     {link.display_text}
@@ -67,8 +67,8 @@ export function UrlList({ links, urls }: UrlListProps) {
               </li>
             ))}
 
-            {looseUrls.map((url) => (
-              <li key={url}>
+            {looseUrls.map((url, index) => (
+              <li key={`${index}-${url}`}>
                 <code className="block rounded bg-muted/40 px-2 py-1 font-mono text-[11px] break-all ">
                   {url}
                 </code>

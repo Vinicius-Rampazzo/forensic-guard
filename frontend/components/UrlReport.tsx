@@ -13,6 +13,7 @@ import { AlertTriangle, ShieldOff } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { IndicatorsList } from "@/components/IndicatorsList";
+import { ScrambleText } from "@/components/ScrambleText";
 import { RISK_BAR_COLORS, SeverityBadge } from "@/components/SeverityBadge";
 import { UrlAnatomy } from "@/components/UrlAnatomy";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -48,7 +49,11 @@ export function UrlReport({ result }: { result: UrlAnalysisResult }) {
                   className="h-3.5 w-0.5 shrink-0 rounded-full"
                   style={{ background: "var(--brand-cyan)" }}
                 />
-                {result.parts.registrable_domain || result.parts.scheme}
+                {/* Mesma regra do relatorio de arquivo: o dominio e o assunto
+                    da analise, nao um achado dela. */}
+                <ScrambleText
+                  text={result.parts.registrable_domain || result.parts.scheme}
+                />
               </h2>
               <p className="text-xs text-muted-foreground">
                 {scored === 0
@@ -100,8 +105,19 @@ export function UrlReport({ result }: { result: UrlAnalysisResult }) {
       <UrlAnatomy parts={result.parts} url={result.url} />
 
       <div className="flex flex-col gap-3">
-        <h3 className="text-sm font-medium">
-          {tRisk("title")} · {result.risk.indicators.length}
+        {/*
+          Flex com `items-center`, e nao texto corrido com espacos. Enquanto
+          decodifica, o ScrambleText vira `inline-block` para poder ter a
+          caixa travada - e inline-block alinha pela base da ultima linha, o
+          que desencontraria o rotulo do numero ao lado durante a animacao.
+          Em flex o alinhamento e do container, entao o problema nao existe.
+        */}
+        <h3 className="flex items-center gap-1.5 text-sm font-medium">
+          {/* So o rotulo. A contagem de indicadores fica fora, pelo mesmo
+              motivo de sempre: numero nao embaralha. */}
+          <ScrambleText text={tRisk("title")} />
+          <span className="text-muted-foreground">·</span>
+          <span>{result.risk.indicators.length}</span>
         </h3>
         <IndicatorsList indicators={result.risk.indicators} />
       </div>
