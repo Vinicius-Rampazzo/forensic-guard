@@ -6,9 +6,11 @@
  * bytes comecam com `MZ` - declarado como PDF, detectado como executavel.
  */
 
-import { Badge } from "@/components/Badge";
+import type { CSSProperties, ReactNode } from "react";
+
+import { SeverityBadge } from "@/components/SeverityBadge";
 import { Card } from "@/components/Card";
-import { formatBytes } from "@/components/FileOverview";
+import { formatBytes } from "@/components/format";
 import type { Attachment } from "@/types/analysis";
 
 interface AttachmentListProps {
@@ -27,11 +29,15 @@ export function AttachmentList({ attachments, truncated }: AttachmentListProps) 
       }
     >
       {attachments.length === 0 ? (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">No attachments.</p>
+        <p className="text-sm text-muted-foreground">No attachments.</p>
       ) : (
-        <ul className="flex flex-col gap-3">
-          {attachments.map((attachment) => (
-            <AttachmentRow key={attachment.filename} attachment={attachment} />
+        <ul className="fg-stagger flex flex-col gap-3">
+          {attachments.map((attachment, index) => (
+            <AttachmentRow
+              key={attachment.filename}
+              attachment={attachment}
+              index={index}
+            />
           ))}
         </ul>
       )}
@@ -39,7 +45,7 @@ export function AttachmentList({ attachments, truncated }: AttachmentListProps) 
   );
 }
 
-function AttachmentRow({ attachment }: { attachment: Attachment }) {
+function AttachmentRow({ attachment, index }: { attachment: Attachment; index: number }) {
   const analysis = attachment.analysis;
   const detection = analysis?.detection;
 
@@ -49,15 +55,14 @@ function AttachmentRow({ attachment }: { attachment: Attachment }) {
 
   return (
     <li
-      className={`rounded border p-3 ${
-        disguised
-          ? "border-red-500/30 bg-red-500/5"
-          : "border-zinc-200 dark:border-zinc-800"
+      style={{ "--fg-i": index } as CSSProperties}
+      className={`fg-card rounded border p-3 ${
+        disguised ? "border-red-500/30 bg-red-500/5" : "border-border"
       }`}
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <span className="min-w-0 font-mono text-xs break-all">{attachment.filename}</span>
-        {analysis && <Badge label={analysis.risk.level} tone={analysis.risk.level} />}
+        {analysis && <SeverityBadge tone={analysis.risk.level} />}
       </div>
 
       <dl className="mt-2 flex flex-col gap-0.5 text-[11px]">
@@ -79,7 +84,7 @@ function AttachmentRow({ attachment }: { attachment: Attachment }) {
       </dl>
 
       {!analysis && (
-        <p className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+        <p className="mt-2 text-[11px] text-muted-foreground">
           Not analysed: the recursion depth limit was reached. The attachment is
           still listed, because hiding it would be worse than not inspecting it.
         </p>
@@ -94,12 +99,12 @@ function Row({
   alert = false,
 }: {
   label: string;
-  children: React.ReactNode;
+  children: ReactNode;
   alert?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-3">
-      <dt className="shrink-0 text-zinc-500 sm:w-32 dark:text-zinc-400">{label}</dt>
+      <dt className="shrink-0 text-muted-foreground sm:w-32">{label}</dt>
       <dd
         className={`min-w-0 font-mono break-all ${
           alert ? "font-medium text-red-600 dark:text-red-400" : ""

@@ -61,7 +61,7 @@ export function EmailHeaders({ email }: { email: EmailAnalysis }) {
         hint="Added by the servers the message passed through, newest first. One of the few parts the sender cannot write."
       >
         {email.received_chain.length === 0 ? (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-muted-foreground">
             No Received headers. The message may never have been delivered.
           </p>
         ) : (
@@ -69,7 +69,7 @@ export function EmailHeaders({ email }: { email: EmailAnalysis }) {
             {email.received_chain.map((hop, index) => (
               <li
                 key={`${index}-${hop.slice(0, 40)}`}
-                className="rounded bg-zinc-50 px-2 py-1.5 font-mono text-[11px] break-all dark:bg-zinc-900/60"
+                className="rounded bg-muted/40 px-2 py-1.5 font-mono text-[11px] break-all "
               >
                 {hop}
               </li>
@@ -132,13 +132,13 @@ function AuthenticationCard({ authentication }: { authentication: Authentication
                 {value}
               </span>
             )}
-            <span className="ml-2 text-xs text-zinc-400 dark:text-zinc-600">{note}</span>
+            <span className="ml-2 text-xs text-muted-foreground/60">{note}</span>
           </DataRow>
         ))}
       </DataList>
 
       {authentication.raw === null && (
-        <p className="mt-3 border-t border-zinc-100 pt-3 text-xs text-zinc-500 dark:border-zinc-900 dark:text-zinc-400">
+        <p className="mt-3 border-t pt-3 text-xs text-muted-foreground">
           No authentication results in this message. Not having a result is
           different from having failed — a file exported before delivery never
           passed through a verifying server.

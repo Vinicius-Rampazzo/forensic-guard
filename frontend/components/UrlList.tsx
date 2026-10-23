@@ -34,9 +34,9 @@ export function UrlList({ links, urls }: UrlListProps) {
           hint="The displayed address does not match the destination. This is the defining technique of phishing."
         >
           <ul className="flex flex-col gap-3">
-            {misleading.map((link) => (
+            {misleading.map((link, index) => (
               <li
-                key={`${link.url}-${link.display_text}`}
+                key={`${index}-${link.url}`}
                 className="rounded border border-red-500/30 bg-red-500/5 p-3"
               >
                 <div className="flex flex-col gap-1">
@@ -51,25 +51,25 @@ export function UrlList({ links, urls }: UrlListProps) {
 
       <Card title="Links" hint="URLs are shown as text and are never clickable.">
         {honest.length === 0 && looseUrls.length === 0 ? (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">No other links found.</p>
+          <p className="text-sm text-muted-foreground">No other links found.</p>
         ) : (
           <ul className="flex flex-col gap-2">
-            {honest.map((link) => (
-              <li key={`${link.url}-${link.display_text}`} className="flex flex-col gap-0.5">
+            {honest.map((link, index) => (
+              <li key={`${index}-${link.url}`} className="flex flex-col gap-0.5">
                 {link.display_text && (
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                  <span className="text-xs text-muted-foreground">
                     {link.display_text}
                   </span>
                 )}
-                <code className="rounded bg-zinc-50 px-2 py-1 font-mono text-[11px] break-all dark:bg-zinc-900/60">
+                <code className="rounded bg-muted/40 px-2 py-1 font-mono text-[11px] break-all ">
                   {link.url}
                 </code>
               </li>
             ))}
 
-            {looseUrls.map((url) => (
-              <li key={url}>
-                <code className="block rounded bg-zinc-50 px-2 py-1 font-mono text-[11px] break-all dark:bg-zinc-900/60">
+            {looseUrls.map((url, index) => (
+              <li key={`${index}-${url}`}>
+                <code className="block rounded bg-muted/40 px-2 py-1 font-mono text-[11px] break-all ">
                   {url}
                 </code>
               </li>
@@ -92,7 +92,7 @@ function Side({
 }) {
   return (
     <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-3">
-      <span className="shrink-0 text-[11px] text-zinc-500 sm:w-32 dark:text-zinc-400">
+      <span className="shrink-0 text-[11px] text-muted-foreground sm:w-32">
         {label}
       </span>
       <code

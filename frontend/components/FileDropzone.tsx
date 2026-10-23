@@ -1,7 +1,7 @@
 /**
  * Area de upload com arrastar-e-soltar.
  *
- * Implementado com os eventos nativos do navegador, sem biblioteca. Sao quatro
+ * Implementado com os eventos nativos do navegador, sem biblioteca. Sao tres
  * eventos e uma armadilha:
  *
  *   dragEnter / dragOver  -> o arquivo esta sobre a area
@@ -16,9 +16,13 @@
 
 "use client";
 
+import { UploadCloud } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 
-import { formatBytes } from "@/components/FileOverview";
+import { formatBytes } from "@/components/format";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const SUPPORTED_FORMATS = ["JPG", "PNG", "PDF", "EML", "DOCX", "ZIP", "EXE"];
 
@@ -34,6 +38,7 @@ export function FileDropzone({
   disabled = false,
   uploadLimit = null,
 }: FileDropzoneProps) {
+  const t = useTranslations("upload");
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -77,35 +82,48 @@ export function FileDropzone({
     event.target.value = "";
   }
 
-  const borderStyle = isDraggingOver
-    ? "border-emerald-500 bg-emerald-500/5"
-    : "border-zinc-300 dark:border-zinc-700";
-
   return (
     <div
       onDragOver={handleDragOver}
       onDragEnter={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`flex flex-col items-center gap-4 rounded-xl border-2 border-dashed px-6 py-16 text-center transition-colors ${borderStyle} ${
-        disabled ? "opacity-50" : ""
-      }`}
+      className={cn(
+        "flex flex-col items-center gap-5 rounded-xl border-2 border-dashed px-6 py-14 text-center transition-all duration-200",
+        isDraggingOver
+          ? "scale-[1.01] border-[var(--brand-cyan)] bg-[color-mix(in_oklab,var(--brand-cyan)_7%,transparent)]"
+          : "border-border hover:border-foreground/25",
+        disabled && "pointer-events-none opacity-50",
+      )}
     >
+      <div
+        className={cn(
+          "flex size-12 items-center justify-center rounded-full border transition-all duration-200",
+          isDraggingOver
+            ? "scale-110 border-[var(--brand-cyan)]/40 bg-[color-mix(in_oklab,var(--brand-cyan)_12%,transparent)]"
+            : "border-border bg-muted/40",
+        )}
+      >
+        <UploadCloud
+          className={cn(
+            "size-5 transition-colors duration-200",
+            isDraggingOver ? "text-[var(--brand-cyan)]" : "text-muted-foreground",
+          )}
+        />
+      </div>
+
       <div className="flex flex-col gap-1">
-        <p className="text-base font-medium">Drop evidence here</p>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          or select a file from your computer
+        <p className="text-base font-medium">
+          {isDraggingOver ? t("release") : t("drop")}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {t("or")}
         </p>
       </div>
 
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => inputRef.current?.click()}
-        className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed dark:bg-zinc-100 dark:text-zinc-900"
-      >
-        Select file
-      </button>
+      <Button type="button" disabled={disabled} onClick={() => inputRef.current?.click()}>
+        {t("select")}
+      </Button>
 
       {/*
         O input de arquivo e escondido e acionado pelo botao acima. Motivo:
@@ -120,15 +138,16 @@ export function FileDropzone({
         aria-label="Select evidence file"
       />
 
-      <p className="font-mono text-xs text-zinc-400 dark:text-zinc-600">
-        {SUPPORTED_FORMATS.join(" • ")} and more
-      </p>
-
-      {uploadLimit !== null && (
-        <p className="text-xs text-zinc-400 dark:text-zinc-600">
-          Up to {formatBytes(uploadLimit)} per file
+      <div className="flex flex-col items-center gap-1">
+        <p className="font-mono text-xs text-muted-foreground">
+          {SUPPORTED_FORMATS.join(" · ")} {t("andMore")}
         </p>
-      )}
+        {uploadLimit !== null && (
+          <p className="text-xs text-muted-foreground">
+            {t("limit", { size: formatBytes(uploadLimit) })}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

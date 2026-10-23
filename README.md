@@ -2,6 +2,8 @@
 
 **Lightweight Digital Evidence Analyzer**
 
+![The ForensicGuard landing page, showing the logo, the headline "Descubra o que um arquivo realmente é", and counters for 33 recognised formats, 16 risk rules and 275 backend tests](docs/screenshots/landing.png)
+
 Open-source forensic triage tool for inspecting files, images and emails for
 suspicious indicators, metadata anomalies and potential security threats.
 
@@ -25,6 +27,8 @@ suspicious indicators, metadata anomalies and potential security threats.
 | Layer | Technology |
 | --- | --- |
 | Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS 4 |
+| Interface | shadcn/ui, Lucide icons, Recharts, Motion |
+| Localisation | next-intl — English and Brazilian Portuguese |
 | Backend | Python 3.12+, FastAPI, Pydantic, Uvicorn |
 | Forensics | hashlib, puremagic, Pillow |
 | Tests | pytest |
@@ -194,9 +198,28 @@ read the `Local:` line for the address actually in use.
 
 Open http://localhost:3000 in a browser.
 
-The page must show the **API online** badge in green. If it shows **API
-offline**, the frontend is running but cannot reach the backend — check that
-step 3 is still running in the other terminal.
+The address will not stay as typed: the interface carries the language in the
+URL, so `/` redirects to `/en-us` or `/pt-br`. The choice comes from the
+`NEXT_LOCALE` cookie if one exists, otherwise from the browser's own language
+setting. The language button in the header switches between the two and keeps
+you on the same page.
+
+| Address | Page |
+| --- | --- |
+| http://localhost:3000/en-us | Landing page, in English |
+| http://localhost:3000/pt-br | Landing page, in Portuguese |
+| http://localhost:3000/en-us/analyze | The analysis tool |
+
+The header always shows the API status. It must read **API online** in green.
+If it reads **API offline** in red, click the badge: the explanation opens with
+a *Try again* button. Check that step 3 is still running in the other terminal.
+
+A third state, **starting**, only appears when `NEXT_PUBLIC_API_URL` points at a
+remote server. Free hosting plans put a service to sleep after a while, and the
+first request has to wake it up — the badge explains the wait instead of
+claiming the API is down. Against a local backend this state never shows: a
+backend that is not running refuses the connection immediately, so there is
+nothing to wait for.
 
 Two more addresses worth opening:
 

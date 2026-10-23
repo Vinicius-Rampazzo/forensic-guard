@@ -33,7 +33,7 @@ export function ExifCard({ image }: { image: ImageAnalysis }) {
               <>
                 {image.width} × {image.height} px
                 {image.megapixels !== null && (
-                  <span className="ml-2 text-zinc-500 dark:text-zinc-400">
+                  <span className="ml-2 text-muted-foreground">
                     ({image.megapixels} MP)
                   </span>
                 )}
@@ -65,7 +65,7 @@ export function ExifCard({ image }: { image: ImageAnalysis }) {
             <DataRow label="Software">
               {image.software ?? <Empty />}
               {image.software && (
-                <span className="ml-2 text-xs text-zinc-400 dark:text-zinc-600">
+                <span className="ml-2 text-xs text-muted-foreground/60">
                   editing software is information, not a finding
                 </span>
               )}
@@ -76,7 +76,7 @@ export function ExifCard({ image }: { image: ImageAnalysis }) {
             </DataRow>
           </DataList>
         ) : (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-muted-foreground">
             No EXIF metadata. This is not suspicious.
           </p>
         )}
@@ -116,7 +116,7 @@ function LocationCard({ gps }: { gps: Gps | null }) {
           </DataRow>
         </DataList>
       ) : (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="text-sm text-muted-foreground">
           No GPS coordinates embedded.
         </p>
       )}

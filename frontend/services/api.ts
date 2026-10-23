@@ -7,7 +7,7 @@
  * editar, em vez de dez componentes.
  */
 
-import type { AnalysisResult } from "@/types/analysis";
+import type { AnalysisResult, UrlAnalysisResult } from "@/types/analysis";
 import type { HealthResponse } from "@/types/api";
 
 /**
@@ -18,6 +18,26 @@ import type { HealthResponse } from "@/types/api";
  * o clone, sem configuracao.
  */
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
+
+/**
+ * O backend e o da propria maquina, ou um servidor remoto?
+ *
+ * A diferenca muda o que a interface deve dizer quando a API nao responde:
+ *
+ *   local   -> "voce esqueceu de rodar `python backend/dev.py`"
+ *   remoto  -> "o servidor esta ligando, aguarde"
+ *
+ * E muda tambem quanto tempo esperar. Um backend local que nao esta no ar
+ * recusa a conexao em milissegundos; nao ha o que aguardar. Um servidor em
+ * plano gratuito que hiberna simplesmente demora a responder - segurar a
+ * requisicao por um minuto ali e o comportamento correto.
+ *
+ * Decidido na compilacao, a partir da URL. Sem adivinhacao em tempo de
+ * execucao e sem variavel de ambiente extra para manter em sincronia.
+ */
+export const IS_LOCAL_API = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/i.test(
+  API_BASE_URL,
+);
 
 /**
  * Erro vindo da API.
@@ -137,4 +157,40 @@ async function describeFailure(response: Response): Promise<string> {
   }
 
   return `Analysis failed with status ${response.status}.`;
+}
+
+/**
+ * Envia uma URL para analise.
+ *
+ * Vai como JSON, nao como formulario - e um campo de texto, nao um arquivo.
+ *
+ * Importante: esta chamada NAO visita a URL. O backend disseca a estrutura do
+ * endereco e nada mais. Resolver o DNS ou abrir a pagina avisaria a quem a
+ * montou que ela esta sendo investigada.
+ */
+export async function analyzeUrl(
+  url: string,
+  signal?: AbortSignal,
+): Promise<UrlAnalysisResult> {
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}/analyze/url`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+      signal,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw error;
+    }
+    throw new ApiError("Could not reach the API");
+  }
+
+  if (!response.ok) {
+    throw new ApiError(await describeFailure(response), response.status);
+  }
+
+  return (await response.json()) as UrlAnalysisResult;
 }

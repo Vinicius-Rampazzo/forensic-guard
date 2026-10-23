@@ -8,11 +8,14 @@ formula em verdades independentes do codigo.
 import io
 from pathlib import Path
 
+import pytest
+
 from app.utils import streaming
 from app.utils.entropy import (
     MAX_ENTROPY,
     compute_entropy,
     compute_entropy_from_stream,
+    compute_entropy_profile,
 )
 
 
@@ -96,6 +99,86 @@ class TestRealContent:
 
         assert text_entropy < random_entropy
         assert random_entropy > 7.5
+
+
+class TestEntropyProfile:
+    """Mapa de entropia por bloco - a base do grafico do relatorio."""
+
+    def test_overall_matches_the_single_pass_calculation(self, tmp_path: Path) -> None:
+        """O valor global do perfil e o mesmo da funcao simples.
+
+        As contagens dos blocos somadas dao exatamente a contagem do arquivo
+        inteiro, entao os dois caminhos tem que chegar ao mesmo numero. Se
+        divergirem, o perfil esta perdendo ou duplicando bytes.
+        """
+        evidence = tmp_path / "misto.bin"
+        evidence.write_bytes(b"texto comum repetido " * 200 + bytes(range(256)) * 40)
+
+        profile = compute_entropy_profile(evidence)
+
+        assert profile.overall == pytest.approx(compute_entropy(evidence))
+
+    def test_finds_the_high_entropy_region(self, tmp_path: Path) -> None:
+        """O teste que justifica o grafico existir.
+
+        O arquivo e metade texto repetitivo, metade conteudo quase aleatorio.
+        A media global esconde as duas naturezas; o mapa separa, e e isso que
+        um analista procura ao caçar uma secao empacotada dentro de um
+        binario.
+        """
+        calmo = b"AAAABBBBCCCCDDDD" * 2_000
+        agitado = bytes((index * 167) % 256 for index in range(32_000))
+
+        evidence = tmp_path / "empacotado.bin"
+        evidence.write_bytes(calmo + agitado)
+
+        profile = compute_entropy_profile(evidence, block_count=16)
+        metade = len(profile.blocks) // 2
+
+        primeira_metade = max(profile.blocks[:metade])
+        segunda_metade = min(profile.blocks[metade:])
+
+        assert primeira_metade < 3.0
+        assert segunda_metade > 7.0
+
+    def test_respects_the_requested_block_count(self, tmp_path: Path) -> None:
+        evidence = tmp_path / "grande.bin"
+        evidence.write_bytes(bytes(range(256)) * 400)
+
+        profile = compute_entropy_profile(evidence, block_count=16)
+
+        assert len(profile.blocks) == 16
+
+    def test_small_file_gets_fewer_blocks_not_meaningless_ones(
+        self, tmp_path: Path
+    ) -> None:
+        """A entropia de quatro bytes nao significa nada.
+
+        Com tao poucas amostras, qualquer sequencia parece aleatoria. Entao
+        arquivo pequeno recebe menos blocos, nunca blocos minusculos.
+        """
+        evidence = tmp_path / "pequeno.bin"
+        evidence.write_bytes(b"A" * 600)
+
+        profile = compute_entropy_profile(evidence, block_count=64)
+
+        assert 0 < len(profile.blocks) <= 3
+
+    def test_empty_file_has_no_blocks(self, tmp_path: Path) -> None:
+        evidence = tmp_path / "vazio.bin"
+        evidence.write_bytes(b"")
+
+        profile = compute_entropy_profile(evidence)
+
+        assert profile.overall == 0.0
+        assert profile.blocks == ()
+
+    def test_every_block_stays_within_the_scale(self, tmp_path: Path) -> None:
+        evidence = tmp_path / "qualquer.bin"
+        evidence.write_bytes(bytes(range(256)) * 100)
+
+        for value in compute_entropy_profile(evidence).blocks:
+            assert 0.0 <= value <= MAX_ENTROPY
 
 
 class TestChunkedReading:

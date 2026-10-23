@@ -15,6 +15,7 @@
 import { useMemo, useState } from "react";
 
 import { Card } from "@/components/Card";
+import { Input } from "@/components/ui/input";
 import type { Artifacts, StringsAnalysis } from "@/types/analysis";
 
 /** Rotulo legivel de cada categoria de artefato. */
@@ -49,21 +50,21 @@ export function StringsPanel({ strings }: { strings: StringsAnalysis }) {
         hint="Patterns recognised inside the file. Always complete, even when the listing below is cut short."
       >
         {categories.length === 0 ? (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-muted-foreground">
             No recognisable artifacts found.
           </p>
         ) : (
           <div className="flex flex-col gap-4">
             {categories.map(([category, values]) => (
               <div key={category} className="flex flex-col gap-1.5">
-                <h4 className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                <h4 className="text-xs font-medium text-muted-foreground">
                   {ARTIFACT_LABELS[category]} ({values.length})
                 </h4>
                 <ul className="flex flex-col gap-1">
                   {values.map((value) => (
                     <li
                       key={value}
-                      className="rounded bg-zinc-50 px-2 py-1 font-mono text-[11px] break-all dark:bg-zinc-900/60"
+                      className="rounded bg-muted/40 px-2 py-1 font-mono text-[11px] break-all "
                     >
                       {value}
                     </li>
@@ -112,19 +113,19 @@ function SearchableStrings({ strings }: { strings: StringsAnalysis }) {
       )}
 
       {strings.sample.length === 0 ? (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="text-sm text-muted-foreground">
           No readable strings found.
         </p>
       ) : (
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-3">
-            <input
+            <Input
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Filter strings — try http, .exe, powershell"
               aria-label="Filter extracted strings"
-              className="min-w-0 flex-1 rounded-md border border-zinc-300 bg-transparent px-3 py-1.5 font-mono text-xs outline-none focus:border-emerald-500 dark:border-zinc-700"
+              className="min-w-0 flex-1 font-mono text-xs"
             />
 
             {/*
@@ -134,7 +135,7 @@ function SearchableStrings({ strings }: { strings: StringsAnalysis }) {
             */}
             <span
               aria-live="polite"
-              className="shrink-0 font-mono text-[11px] text-zinc-500 tabular-nums dark:text-zinc-400"
+              className="shrink-0 font-mono text-[11px] text-muted-foreground tabular-nums"
             >
               {trimmed
                 ? `${matches.length.toLocaleString("en-US")} match${matches.length === 1 ? "" : "es"}`
@@ -143,18 +144,18 @@ function SearchableStrings({ strings }: { strings: StringsAnalysis }) {
           </div>
 
           {matches.length === 0 ? (
-            <p className="rounded border border-zinc-100 px-3 py-6 text-center text-sm text-zinc-500 dark:border-zinc-900 dark:text-zinc-400">
+            <p className="rounded border px-3 py-6 text-center text-sm text-muted-foreground">
               Nothing matches {`"${query}"`}.
             </p>
           ) : (
             <>
-              <ul className="max-h-[32rem] overflow-y-auto rounded border border-zinc-100 dark:border-zinc-900">
+              <ul className="max-h-[32rem] overflow-y-auto rounded border border-border">
                 {visible.map((value, index) => (
                   // O indice entra na chave porque a lista pode conter a mesma
                   // string em posicoes diferentes apos o filtro.
                   <li
                     key={`${index}-${value}`}
-                    className="border-b border-zinc-100 px-2 py-1 font-mono text-[11px] break-all last:border-0 dark:border-zinc-900"
+                    className="border-b px-2 py-1 font-mono text-[11px] break-all last:border-0"
                   >
                     {highlight(value, trimmed)}
                   </li>
@@ -162,7 +163,7 @@ function SearchableStrings({ strings }: { strings: StringsAnalysis }) {
               </ul>
 
               {hidden > 0 && (
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                <p className="text-[11px] text-muted-foreground">
                   Showing the first {MAX_RENDERED_ROWS.toLocaleString("en-US")} of{" "}
                   {matches.length.toLocaleString("en-US")}. Refine the filter to
                   narrow it down — the search covers every string, not just the

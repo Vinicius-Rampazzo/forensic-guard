@@ -1,27 +1,516 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------------------
+   Identidade visual
+   ---------------------------------------------------------------------------
+   A paleta vem da logo: magenta #FC1EC8 e ciano #00EBFC sobre preto.
+
+   Essas duas cores sao usadas na INTERFACE - logo, foco, botoes, destaques.
+   Elas NAO vao cruas para os graficos: o ciano tem luminosidade 0,857, muito
+   acima da faixa legivel sobre fundo escuro, e ciano com magenta lado a lado
+   falha na separacao para daltonismo deutan.
+
+   As cores dos graficos sao versoes rebaixadas e reordenadas das mesmas
+   familias, validadas para faixa de luminosidade, contraste, croma e tres
+   tipos de daltonismo.
+   --------------------------------------------------------------------------- */
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-space-grotesk);
+  --font-mono: var(--font-jetbrains-mono);
+  --font-heading: var(--font-space-grotesk);
+
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  --color-brand-magenta: var(--brand-magenta);
+  --color-brand-cyan: var(--brand-cyan);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  --radius: 0.5rem;
+
+  /* Alturas da barra de cima.
+     A barra e mais alta no topo da pagina e encolhe assim que a rolagem
+     comeca.
+
+     Tudo que gruda na rolagem - o resumo do relatorio, a navegacao lateral -
+     usa a altura ENCOLHIDA, e nao a do topo. O motivo: quando algo chega ao
+     ponto de grudar, a pessoa ja rolou, e a barra ja encolheu. Usar a altura
+     do topo deixaria uma faixa vazia permanente embaixo dela. */
+  --app-header-height: 3.5rem;
+  --app-header-height-top: 4.5rem;
+
+  /* Cores puras da logo. Usadas em gradientes e detalhes, nunca como fundo
+     de area grande - saturacao assim cansa a vista rapido. */
+  --brand-magenta: #fc1ec8;
+  --brand-cyan: #00ebfc;
+
+  /* Versoes "de tinta" das cores da marca: a variacao que da para DESENHAR
+     sobre o fundo deste tema.
+
+     O ciano da logo tem luminosidade 0,857 - sobre branco ele simplesmente
+     some. Fios de luz, bordas animadas e varreduras usam estas variaveis, e
+     nunca as cores puras, para existirem nos dois temas. Sao as mesmas cores
+     ja validadas para a paleta de graficos. */
+  --brand-cyan-ink: #0a8ea8;
+  --brand-magenta-ink: #b81c8a;
+
+  /* Tema claro: papel, nao holofote.
+     ------------------------------------------------------------------------
+     A primeira versao usava branco puro no cartao (L 1,0) sobre um fundo quase
+     branco (L 0,985). Numa ferramenta que se le por minutos seguidos - tabela
+     de hashes, lista de strings - isso cansa: o olho trabalha contra uma
+     superficie que devolve quase toda a luz da tela.
+
+     Agora o fundo e um cinza frio claro e o cartao e um quase-branco. A
+     diferenca de 3,5 pontos de luminosidade entre os dois e o que da relevo
+     aos paineis sem precisar de sombra pesada.
+
+     Nada aqui e neutro puro: todos levam um tracinho de croma na matiz 265
+     (azul frio), que e a mesma do tema escuro. Cinza perfeitamente neutro
+     parece sujo ao lado de qualquer cor saturada - e esta interface tem
+     magenta e ciano por toda parte. */
+  --background: oklch(0.945 0.005 265);
+  --foreground: oklch(0.21 0.015 265);
+  --card: oklch(0.98 0.004 265);
+  --card-foreground: oklch(0.21 0.015 265);
+  --popover: oklch(0.98 0.004 265);
+  --popover-foreground: oklch(0.21 0.015 265);
+
+  --primary: oklch(0.5 0.11 215);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.915 0.007 265);
+  --secondary-foreground: oklch(0.25 0.015 265);
+  --muted: oklch(0.915 0.007 265);
+  --muted-foreground: oklch(0.47 0.018 265);
+  --accent: oklch(0.915 0.02 320);
+  --accent-foreground: oklch(0.25 0.015 265);
+  --destructive: oklch(0.55 0.21 25);
+
+  --border: oklch(0.875 0.008 265);
+  --input: oklch(0.875 0.008 265);
+  --ring: oklch(0.53 0.13 210);
+
+  /* Paleta de graficos - modo claro.
+     Validada: faixa de luminosidade, croma, contraste >= 3:1 e separacao
+     para daltonismo (pior par adjacente Delta E 12,5). */
+  --chart-1: #b81c8a;
+  --chart-2: #b07400;
+  --chart-3: #0a8ea8;
+  --chart-4: #d14343;
+  --chart-5: #2a78d6;
+  --chart-6: #16855e;
+}
+
+.dark {
+  --background: oklch(0.145 0.014 268);
+  --foreground: oklch(0.95 0.005 265);
+  --card: oklch(0.185 0.015 268);
+  --card-foreground: oklch(0.95 0.005 265);
+  --popover: oklch(0.2 0.016 268);
+  --popover-foreground: oklch(0.95 0.005 265);
+
+  --primary: oklch(0.8 0.14 200);
+  --primary-foreground: oklch(0.16 0.02 268);
+  --secondary: oklch(0.26 0.016 268);
+  --secondary-foreground: oklch(0.95 0.005 265);
+  --muted: oklch(0.25 0.015 268);
+  --muted-foreground: oklch(0.68 0.012 265);
+  --accent: oklch(0.28 0.04 320);
+  --accent-foreground: oklch(0.96 0.005 265);
+  --destructive: oklch(0.68 0.19 22);
+
+  --border: oklch(0.99 0 0 / 11%);
+  --input: oklch(0.99 0 0 / 15%);
+  --ring: oklch(0.72 0.14 200);
+
+  /* Sobre fundo escuro as cores puras da logo sao exatamente o que se quer
+     desenhar - entao a "tinta" e a propria cor. */
+  --brand-cyan-ink: var(--brand-cyan);
+  --brand-magenta-ink: var(--brand-magenta);
+
+  /* Paleta de graficos - modo escuro.
+     Mesmas familias, rebaixadas para a faixa do fundo escuro.
+     Pior par adjacente Delta E 13,0 para daltonismo. */
+  --chart-1: #d1309f;
+  --chart-2: #c98500;
+  --chart-3: #17a3b8;
+  --chart-4: #e66767;
+  --chart-5: #3987e5;
+  --chart-6: #199e70;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+
+  /*
+    Numeros com largura fixa em toda a interface.
+    Sem isso, um score indo de 99 para 100 faz o texto ao lado pular.
+  */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  /* Usa a fonte carregada no layout.tsx (Geist), com fallback do sistema. */
-  font-family: var(--font-sans), system-ui, sans-serif;
+/* ---------------------------------------------------------------------------
+   Animacoes proprias
+   --------------------------------------------------------------------------- */
+
+/*
+  Curva de aceleracao usada em tudo.
+  Comeca rapido e desacelera no fim - o movimento parece ter peso, em vez de
+  parar de supetao como a curva linear.
+*/
+@theme {
+  --ease-fg: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes forensicguard-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fg-rise {
+  animation: forensicguard-rise 0.38s var(--ease-fg) both;
+}
+
+/*
+  Entrada em cascata para listas.
+  Cada item recebe `--fg-i` com a propria posicao, e o atraso sai disso. O
+  teto de 12 evita que o decimo-quinto item de uma lista longa demore quase um
+  segundo para aparecer.
+*/
+.fg-stagger > * {
+  animation: forensicguard-rise 0.38s var(--ease-fg) both;
+  animation-delay: calc(min(var(--fg-i, 0), 12) * 45ms);
+}
+
+/*
+  Cartoes reagem ao ponteiro so com luz: a borda ganha o tom da marca e nasce
+  uma sombra baixa.
+
+  O deslocamento vertical saiu daqui. Era de um pixel, mas num relatorio com
+  quinze cartoes encostados o olho percorre varios em sequencia, e cada um
+  pulando ao ser tocado vira um tremor continuo - desagradavel justamente
+  porque e pequeno demais para parecer intencional.
+
+  A transicao tambem ficou quase duas vezes mais longa. Reacao de hover curta
+  demais chega como um estalo; esticada, ela e percebida como o cartao
+  "acendendo".
+*/
+.fg-card {
+  transition:
+    border-color 0.38s var(--ease-fg),
+    box-shadow 0.38s var(--ease-fg);
+}
+
+.fg-card:hover {
+  border-color: color-mix(in oklab, var(--brand-cyan-ink) 28%, var(--border));
+  box-shadow: 0 2px 18px -12px color-mix(in oklab, var(--brand-cyan-ink) 40%, transparent);
+}
+
+/* Realce ao passar o ponteiro em itens de lista e linhas de dados. */
+.fg-row {
+  transition: background-color 0.3s var(--ease-fg);
+}
+
+.fg-row:hover {
+  background-color: color-mix(in oklab, var(--foreground) 4%, transparent);
+}
+
+/* Varredura horizontal do carregamento, sugerindo um arquivo percorrido do
+   inicio ao fim. */
+@keyframes forensicguard-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+.fg-sweep {
+  animation: forensicguard-sweep 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Pulso suave da logo enquanto a analise roda. */
+@keyframes forensicguard-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 14px color-mix(in oklab, var(--brand-cyan) 45%, transparent));
+  }
+}
+
+.fg-pulse {
+  animation: forensicguard-pulse 2s ease-in-out infinite;
+}
+
+/* Brilho da marca, usado no titulo da tela de entrada. */
+.fg-brand-gradient {
+  background: linear-gradient(
+    100deg,
+    var(--brand-magenta) 0%,
+    var(--brand-magenta) 38%,
+    var(--brand-cyan) 62%,
+    var(--brand-cyan) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ---------------------------------------------------------------------------
+   Efeitos da pagina institucional
+   --------------------------------------------------------------------------- */
+
+/*
+  Texto que vai ser decodificado comeca invisivel.
+
+  O HTML chega do servidor com o texto certo, e so depois da hidratacao o
+  JavaScript consegue embaralha-lo. Sem isto, o que se ve ao recarregar e:
+  texto limpo, pausa, e entao o efeito - que parece defeito, nao animacao.
+
+  `visibility` e nao `opacity` nem `display`: so ela esconde mantendo o
+  elemento no lugar, com o tamanho exato. A pagina nunca muda de altura por
+  causa disto, e a caixa pode ser medida enquanto ainda esta escondida.
+
+  O JavaScript devolve a visibilidade no primeiro quadro que ja tem ruido
+  escrito, entao o texto limpo nunca aparece antes do efeito.
+
+  A animacao de 0s com atraso e a rede de seguranca: se o JavaScript falhar,
+  demorar ou estiver desligado, o texto aparece sozinho em 700ms. Nenhum
+  conteudo fica refem de uma animacao de enfeite.
+*/
+.fg-scramble {
+  visibility: hidden;
+  animation: forensicguard-scramble-failsafe 0s linear 700ms forwards;
+}
+
+@keyframes forensicguard-scramble-failsafe {
+  to {
+    visibility: visible;
+  }
+}
+
+/*
+  Luz percorrendo a borda do cartao.
+
+  O truque: um gradiente CONICO girando atras do cartao, recortado por uma
+  mascara que deixa passar so a moldura de 1px. O gradiente e quase todo
+  transparente, entao o que se ve e um ponto de luz dando a volta.
+
+  `@property` e o que torna isso possivel. Sem declarar o angulo como tipo
+  `<angle>`, o navegador trata a variavel como texto e nao sabe interpolar
+  entre 0deg e 360deg - a animacao simplesmente nao acontece.
+*/
+@property --fg-beam-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes forensicguard-beam {
+  to {
+    --fg-beam-angle: 360deg;
+  }
+}
+
+.fg-beam::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--fg-beam-angle),
+    transparent 0deg,
+    var(--brand-cyan-ink) 18deg,
+    var(--brand-magenta-ink) 32deg,
+    transparent 58deg
+  );
+  /* Recorta o preenchimento e deixa so a moldura. As duas mascaras se anulam
+     na area interna; sobra a faixa de 1px do padding. */
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  /* O atraso negativo entra pelo JSX e comeca cada cartao num ponto
+     diferente da volta - tres luzes em sincronia pareceriam um enfeite,
+     fora de fase parecem tres processos independentes. */
+  animation: forensicguard-beam 6s linear infinite;
+  animation-delay: var(--fg-beam-delay, 0s);
+  opacity: 0.45;
+  transition: opacity 0.38s var(--ease-fg);
+}
+
+.fg-beam:hover::after {
+  opacity: 1;
+}
+
+/*
+  Fio de luz no topo do cartao, preenchendo da esquerda para a direita quando
+  o ponteiro chega - como uma barra de progresso de uma etapa concluida.
+
+  `scaleX` em vez de animar `width`: transformacao e composta pela GPU e nao
+  obriga o navegador a recalcular o tamanho dos elementos vizinhos.
+*/
+.fg-edge::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    var(--brand-magenta-ink),
+    var(--brand-cyan-ink)
+  );
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.5s var(--ease-fg);
+}
+
+.fg-edge:hover::before {
+  transform: scaleX(1);
+}
+
+/*
+  Aceno vertical da seta que avisa que ha conteudo abaixo da dobra.
+  Numa tela de entrada que ocupa a janela inteira, nada indica que a pagina
+  continua - e quem nao rola nunca ve o resto.
+*/
+@keyframes forensicguard-cue {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translateY(5px);
+    opacity: 1;
+  }
+}
+
+.fg-cue {
+  animation: forensicguard-cue 1.8s ease-in-out infinite;
+}
+
+/* Cursor de bloco piscando, ao fim do exemplo em forma de terminal. */
+@keyframes forensicguard-caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.fg-caret {
+  animation: forensicguard-caret 1.1s steps(1, end) infinite;
+}
+
+/*
+  Respeita quem pediu menos movimento no sistema operacional.
+  Animacao continua causa desconforto e enjoo em parte das pessoas, e o
+  navegador expoe essa preferencia justamente para ser obedecida.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .fg-rise,
+  .fg-sweep,
+  .fg-pulse,
+  .fg-cue,
+  .fg-caret,
+  .fg-beam::after,
+  .fg-stagger > *,
+  /* Utilitario do Tailwind, usado no anel do pontinho de estado da API.
+     Nada se perde: o ponto continua colorido, so para de pulsar. */
+  .animate-ping {
+    animation: none !important;
+  }
+
+  /* A borda animada vira uma borda parada, e o fio de luz some. Os dois sao
+     decoracao: nenhuma informacao se perde ao desliga-los. */
+  .fg-edge::before,
+  .fg-edge:hover::before {
+    transition: none !important;
+    transform: scaleX(1);
+  }
+
+  /* ATENCAO ao mexer aqui: o texto decodificado precisa de `visibility` junto
+     com `animation: none`. Desligar so a animacao mataria a rede de seguranca
+     que o revela - e o texto ficaria invisivel para sempre justamente para
+     quem pediu menos movimento. */
+  .fg-scramble {
+    visibility: visible;
+    animation: none !important;
+  }
+
+  .fg-card,
+  .fg-card:hover,
+  .fg-row {
+    transform: none !important;
+    transition: none !important;
+  }
 }

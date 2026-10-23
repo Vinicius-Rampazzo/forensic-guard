@@ -190,6 +190,9 @@ def _build_file_schema(analysis: FileAnalysis) -> FileSchema:
     return FileSchema(
         size=analysis.size,
         entropy=analysis.entropy,
+        # Arredondado na fronteira da API: o grafico nao ganha nada com a
+        # quarta casa decimal, e a resposta encolhe sensivelmente.
+        entropy_blocks=[round(value, 3) for value in analysis.entropy_blocks],
         hashes=HashesSchema(**analysis.hashes),
     )
 
