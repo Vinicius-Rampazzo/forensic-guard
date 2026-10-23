@@ -153,6 +153,139 @@ URL_WITH_PUNYCODE = RiskRule(
     score=15,
 )
 
+URL_DANGEROUS_SCHEME = RiskRule(
+    id="url.dangerous_scheme",
+    title="URL uses a code-executing or content-embedding scheme",
+    description=(
+        "The address does not point to a server — it carries code or an "
+        "entire document inside itself. A `data:` link can hold a complete "
+        "phishing form with no domain to report and no server to take down."
+    ),
+    severity=Severity.CRITICAL,
+    score=40,
+)
+
+URL_MIXED_SCRIPTS = RiskRule(
+    id="url.mixed_scripts",
+    title="Domain mixes different writing systems",
+    description=(
+        "The domain combines characters from more than one alphabet — for "
+        "example a Cyrillic 'а' inside an otherwise Latin name. The result "
+        "is visually identical to the legitimate domain while being a "
+        "completely different address."
+    ),
+    severity=Severity.HIGH,
+    score=30,
+)
+
+URL_WITH_CREDENTIALS = RiskRule(
+    id="url.credentials_in_url",
+    title="URL embeds credentials before the host",
+    description=(
+        "Everything before the `@` is treated as a username by the browser "
+        "and ignored when resolving the address. `http://banco.com@evil."
+        "example` goes to evil.example while reading as the bank's site."
+    ),
+    severity=Severity.HIGH,
+    score=25,
+)
+
+URL_EXECUTABLE_PATH = RiskRule(
+    id="url.executable_download",
+    title="URL points directly to an executable",
+    description=(
+        "The path ends in an extension that runs when opened. Software "
+        "vendors distribute installers this way, but in a link received by "
+        "email it is usually the final delivery step."
+    ),
+    severity=Severity.HIGH,
+    score=30,
+)
+
+URL_DOUBLE_EXTENSION = RiskRule(
+    id="url.double_extension",
+    title="URL path uses a double extension",
+    description=(
+        "The filename ends in a harmless extension followed by an executable "
+        "one, like `invoice.pdf.exe`. Systems that hide the final extension "
+        "— the Windows default — display it as `invoice.pdf`."
+    ),
+    severity=Severity.HIGH,
+    score=25,
+)
+
+URL_RISKY_TLD = RiskRule(
+    id="url.risky_tld",
+    title="Domain uses a top-level domain with high abuse rates",
+    description=(
+        "The TLD is either free to register without verification, or it "
+        "collides with a file extension — `.zip` and `.mov` make the text "
+        "`report.zip` into a clickable link to someone else's domain."
+    ),
+    severity=Severity.MEDIUM,
+    score=15,
+)
+
+URL_SHORTENER = RiskRule(
+    id="url.shortener",
+    title="URL uses a link shortening service",
+    description=(
+        "Shorteners are a common and legitimate service. What they do for "
+        "this analysis is hide the destination: there is no way to judge "
+        "where it leads without visiting it, and visiting is exactly what an "
+        "offline triage does not do."
+    ),
+    severity=Severity.LOW,
+    score=10,
+)
+
+URL_EXCESSIVE_SUBDOMAINS = RiskRule(
+    id="url.excessive_subdomains",
+    title="Domain is buried under many subdomains",
+    description=(
+        "A familiar name sits at the start of the address while the actual "
+        "registered domain is at the end — `banco.com.br.seguranca.example."
+        "com` belongs to example.com. The eye stops at the beginning."
+    ),
+    severity=Severity.MEDIUM,
+    score=10,
+)
+
+URL_INSECURE_SCHEME = RiskRule(
+    id="url.insecure_scheme",
+    title="URL uses HTTP without encryption",
+    description=(
+        "Traffic is readable and modifiable in transit. Common on internal "
+        "networks, unusual for a public page — and especially so for one "
+        "asking for a password."
+    ),
+    severity=Severity.LOW,
+    score=10,
+)
+
+URL_NON_STANDARD_PORT = RiskRule(
+    id="url.non_standard_port",
+    title="URL uses a non-standard port",
+    description=(
+        "Public-facing services almost always use the default port. A high "
+        "or unusual port often indicates improvised infrastructure."
+    ),
+    severity=Severity.LOW,
+    score=10,
+)
+
+URL_OBFUSCATED = RiskRule(
+    id="url.obfuscated",
+    title="URL is obscured by encoding or length",
+    description=(
+        "Heavy percent-encoding, a numeric host, or an address long enough "
+        "to push the real domain out of the visible address bar. Each makes "
+        "the destination harder to read at a glance."
+    ),
+    severity=Severity.MEDIUM,
+    score=15,
+)
+
 
 # ---------------------------------------------------------------------------
 # Regras de e-mail
@@ -314,6 +447,17 @@ RISK_RULES: tuple[RiskRule, ...] = (
     SUSPICIOUS_COMMAND,
     URL_WITH_IP_HOST,
     URL_WITH_PUNYCODE,
+    URL_DANGEROUS_SCHEME,
+    URL_MIXED_SCRIPTS,
+    URL_WITH_CREDENTIALS,
+    URL_EXECUTABLE_PATH,
+    URL_DOUBLE_EXTENSION,
+    URL_RISKY_TLD,
+    URL_SHORTENER,
+    URL_EXCESSIVE_SUBDOMAINS,
+    URL_INSECURE_SCHEME,
+    URL_NON_STANDARD_PORT,
+    URL_OBFUSCATED,
     SPF_FAILED,
     DKIM_FAILED,
     DMARC_FAILED,

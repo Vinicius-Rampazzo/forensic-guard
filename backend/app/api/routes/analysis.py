@@ -9,10 +9,13 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from pydantic import BaseModel, Field
 
 from app.config import Settings, get_settings
 from app.schemas.analysis import AnalysisResponse
+from app.schemas.url_analysis import UrlAnalysisResponse
 from app.services.analysis_service import analyze_evidence
+from app.services.url_service import analyze_url_evidence
 from app.utils.temporary_files import (
     EvidenceTooLargeError,
     temporary_evidence,
@@ -77,3 +80,36 @@ def analyze(
             ) from error
 
         return analyze_evidence(path, original_filename=original_filename)
+
+
+class UrlRequest(BaseModel):
+    """Corpo de POST /analyze/url."""
+
+    url: str = Field(
+        min_length=1,
+        max_length=4096,
+        description="The address to inspect. It is never visited.",
+    )
+
+
+@router.post(
+    "/analyze/url",
+    response_model=UrlAnalysisResponse,
+    summary="Analyse a URL without visiting it",
+)
+def analyze_url_endpoint(request: UrlRequest) -> UrlAnalysisResponse:
+    """Disseca uma URL e aponta as caracteristicas incomuns.
+
+    Nenhuma requisicao e feita ao endereco - nem DNS, nem certificado, nem a
+    pagina. Infraestrutura de phishing registra cada acesso, e consultar uma
+    URL suspeita avisa a quem a montou que ela esta sendo investigada.
+
+    Rota sincrona e rapida: a analise e puramente estrutural, sem disco e sem
+    rede. Mesmo assim fica como `def`, e nao `async def`, por consistencia com
+    o restante da API - e porque o FastAPI a executa num pool de threads, o
+    que mantem o laco de eventos livre.
+
+    O limite de 4096 caracteres existe porque todo campo de texto aceito pela
+    API precisa de teto. URLs reais raramente passam de 2000.
+    """
+    return analyze_url_evidence(request.url)

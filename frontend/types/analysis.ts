@@ -194,3 +194,49 @@ export interface AnalysisResult {
   email: EmailAnalysis | null;
   disclaimer: string;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Analise de URL                                                             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A URL dissecada.
+ *
+ * Espelha `UrlPartsSchema` em backend/app/schemas/url_analysis.py.
+ *
+ * Exibir as partes separadas nao e enfeite: a tecnica de phishing mais comum
+ * depende de o leitor nao perceber onde o dominio de verdade comeca.
+ */
+export interface UrlParts {
+  scheme: string;
+  /** Tudo antes do `@`. O navegador ignora ao resolver o endereco. */
+  username: string | null;
+  /** A senha em si nunca e devolvida pela API. */
+  has_password: boolean;
+
+  host: string;
+  /** Como o host realmente aparece, com o punycode decodificado. */
+  unicode_host: string | null;
+  port: number | null;
+
+  /** O dominio que foi de fato registrado - o que importa. */
+  registrable_domain: string;
+  subdomains: string[];
+  tld: string;
+
+  path: string;
+  query: string;
+  fragment: string;
+
+  /** Loopback e rede privada. Trafego interno normal, nao evasao. */
+  is_private_host: boolean;
+}
+
+export interface UrlAnalysisResult {
+  url: string;
+  parts: UrlParts;
+  risk: Risk;
+  error: string | null;
+  analysis_type: "url";
+  disclaimer: string;
+}

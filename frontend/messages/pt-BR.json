@@ -116,5 +116,30 @@
     "weakSignature": "assinatura fraca",
     "strongSignature": "assinatura forte",
     "notRecognised": "não reconhecido"
+  },
+  "url": {
+    "inputMode": "O que você está analisando",
+    "fileTab": "Arquivo",
+    "urlTab": "Link",
+    "paste": "Cole um link para examinar",
+    "neverVisited": "O endereço é dissecado, nunca visitado",
+    "analyse": "Analisar",
+    "tryOne": "ou experimente um destes",
+    "noRequest": "Sem consulta de DNS, sem certificado, sem acessar a página",
+    "anatomy": "Anatomia da URL",
+    "anatomyHint": "Para onde o endereço realmente leva. Só a parte destacada decide isso — todo o resto é escolhido livremente por quem montou o link.",
+    "scheme": "esquema",
+    "ignoredByBrowser": "ignorado pelo navegador",
+    "subdomains": "subdomínios",
+    "realDestination": "destino real",
+    "port": "porta",
+    "path": "caminho",
+    "query": "parâmetros",
+    "fragment": "fragmento",
+    "punycodeTitle": "Este domínio está escrito em punycode",
+    "displaysAs": "aparece como",
+    "actuallyIs": "na verdade é",
+    "privateHost": "Este endereço pertence a uma rede privada ou de loopback — tráfego interno comum, não evasão.",
+    "couldNotParse": "Não foi possível ler esta URL"
   }
 }

@@ -12,10 +12,14 @@
 
 "use client";
 
-import { FileSearch, Image as ImageIcon, Mail, ShieldCheck } from "lucide-react";
+import { FileSearch, FileUp, Image as ImageIcon, Link2, Mail, ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 
 import { FileDropzone } from "@/components/FileDropzone";
+import { UrlInput } from "@/components/UrlInput";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import type { RiskLevel } from "@/types/analysis";
@@ -39,12 +43,23 @@ const RISK_SCALE: { range: string; level: RiskLevel; color: string }[] = [
 
 interface EmptyStateProps {
   onFileSelected: (file: File) => void;
+  onUrlSubmitted: (url: string) => void;
   disabled?: boolean;
   uploadLimit: number | null;
 }
 
-export function EmptyState({ onFileSelected, disabled, uploadLimit }: EmptyStateProps) {
+/** Qual tipo de evidencia o usuario esta entregando. */
+type InputMode = "file" | "url";
+
+export function EmptyState({
+  onFileSelected,
+  onUrlSubmitted,
+  disabled,
+  uploadLimit,
+}: EmptyStateProps) {
+  const [mode, setMode] = useState<InputMode>("file");
   const t = useTranslations("upload");
+  const tUrl = useTranslations("url");
   const tCapabilities = useTranslations("capabilities");
   const tRisk = useTranslations("risk");
   const tPrivacy = useTranslations("privacy");
@@ -61,11 +76,60 @@ export function EmptyState({ onFileSelected, disabled, uploadLimit }: EmptyState
         </p>
       </section>
 
-      <FileDropzone
-        onFileSelected={onFileSelected}
-        disabled={disabled}
-        uploadLimit={uploadLimit}
-      />
+      <div className="flex flex-col gap-4">
+        {/*
+          Abas como um grupo de botoes com role="tablist". Nao e enfeite de
+          acessibilidade: sem isso um leitor de tela anuncia dois botoes
+          soltos, sem dizer que formam um conjunto nem qual esta ativo.
+        */}
+        <div
+          role="tablist"
+          aria-label={tUrl("inputMode")}
+          className="mx-auto flex gap-1 rounded-lg border p-1"
+        >
+          {(
+            [
+              { id: "file" as const, icon: FileUp, label: tUrl("fileTab") },
+              { id: "url" as const, icon: Link2, label: tUrl("urlTab") },
+            ]
+          ).map(({ id, icon: Icon, label }) => (
+            <Button
+              key={id}
+              role="tab"
+              aria-selected={mode === id}
+              variant="ghost"
+              size="sm"
+              onClick={() => setMode(id)}
+              className={cn(
+                "gap-2 transition-all duration-200",
+                mode === id && "bg-muted font-medium",
+              )}
+            >
+              <Icon
+                className="size-4"
+                style={mode === id ? { color: "var(--brand-cyan)" } : undefined}
+              />
+              {label}
+            </Button>
+          ))}
+        </div>
+
+        {/*
+          A chave muda junto com o modo, entao o React recria o elemento e a
+          animacao de entrada roda a cada troca de aba.
+        */}
+        <div key={mode} className="fg-rise">
+          {mode === "file" ? (
+            <FileDropzone
+              onFileSelected={onFileSelected}
+              disabled={disabled}
+              uploadLimit={uploadLimit}
+            />
+          ) : (
+            <UrlInput onSubmit={onUrlSubmitted} disabled={disabled} />
+          )}
+        </div>
+      </div>
 
       <section className="fg-stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {CAPABILITIES.map(({ icon: Icon, key, accent }) => (

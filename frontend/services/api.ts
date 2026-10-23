@@ -7,7 +7,7 @@
  * editar, em vez de dez componentes.
  */
 
-import type { AnalysisResult } from "@/types/analysis";
+import type { AnalysisResult, UrlAnalysisResult } from "@/types/analysis";
 import type { HealthResponse } from "@/types/api";
 
 /**
@@ -137,4 +137,40 @@ async function describeFailure(response: Response): Promise<string> {
   }
 
   return `Analysis failed with status ${response.status}.`;
+}
+
+/**
+ * Envia uma URL para analise.
+ *
+ * Vai como JSON, nao como formulario - e um campo de texto, nao um arquivo.
+ *
+ * Importante: esta chamada NAO visita a URL. O backend disseca a estrutura do
+ * endereco e nada mais. Resolver o DNS ou abrir a pagina avisaria a quem a
+ * montou que ela esta sendo investigada.
+ */
+export async function analyzeUrl(
+  url: string,
+  signal?: AbortSignal,
+): Promise<UrlAnalysisResult> {
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}/analyze/url`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+      signal,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw error;
+    }
+    throw new ApiError("Could not reach the API");
+  }
+
+  if (!response.ok) {
+    throw new ApiError(await describeFailure(response), response.status);
+  }
+
+  return (await response.json()) as UrlAnalysisResult;
 }

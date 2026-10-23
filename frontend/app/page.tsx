@@ -29,9 +29,10 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { formatBytes } from "@/components/format";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { analyzeEvidence, getHealth } from "@/services/api";
+import { UrlReport } from "@/components/UrlReport";
+import { analyzeEvidence, analyzeUrl, getHealth } from "@/services/api";
 import { cn } from "@/lib/utils";
-import type { AnalysisResult } from "@/types/analysis";
+import type { AnalysisResult, UrlAnalysisResult } from "@/types/analysis";
 
 type ApiStatus = "checking" | "online" | "offline";
 
@@ -40,6 +41,7 @@ type Screen =
   | { state: "idle" }
   | { state: "analysing"; filename: string }
   | { state: "done"; result: AnalysisResult }
+  | { state: "doneUrl"; result: UrlAnalysisResult }
   | { state: "failed"; message: string };
 
 export default function Home() {
@@ -122,11 +124,41 @@ export default function Home() {
     }
   }
 
+  async function handleUrl(url: string) {
+    requestRef.current?.abort();
+
+    const controller = new AbortController();
+    requestRef.current = controller;
+
+    // O rotulo exibido durante a espera e a propria URL, cortada. Mostrar o
+    // que esta sendo analisado confirma que foi o endereco certo que saiu.
+    setScreen({
+      state: "analysing",
+      filename: url.length > 70 ? `${url.slice(0, 67)}...` : url,
+    });
+
+    try {
+      const result = await analyzeUrl(url, controller.signal);
+      setScreen({ state: "doneUrl", result });
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") return;
+
+      setScreen({
+        state: "failed",
+        message: error instanceof Error ? error.message : tErrors("generic"),
+      });
+    }
+  }
+
   return (
     <div className="flex min-h-full flex-col">
       <AppHeader
         apiStatus={apiStatus}
-        showReset={screen.state === "done" || screen.state === "failed"}
+        showReset={
+          screen.state === "done" ||
+          screen.state === "doneUrl" ||
+          screen.state === "failed"
+        }
         onReset={() => setScreen({ state: "idle" })}
         onHome={() => setScreen({ state: "landing" })}
       />
@@ -147,6 +179,7 @@ export default function Home() {
         {screen.state === "idle" && (
           <EmptyState
             onFileSelected={handleFile}
+            onUrlSubmitted={handleUrl}
             disabled={apiStatus === "offline"}
             uploadLimit={uploadLimit}
           />
@@ -155,6 +188,8 @@ export default function Home() {
         {screen.state === "analysing" && <AnalysisLoading filename={screen.filename} />}
 
         {screen.state === "done" && <AnalysisReport result={screen.result} />}
+
+        {screen.state === "doneUrl" && <UrlReport result={screen.result} />}
 
         {screen.state === "failed" && (
           <Alert variant="destructive" className="mx-auto max-w-2xl">
