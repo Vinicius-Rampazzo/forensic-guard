@@ -32,8 +32,8 @@ import { Link } from "@/i18n/navigation";
  */
 const STATS = [
   { value: "33", key: "formats" as const },
-  { value: "16", key: "rules" as const },
-  { value: "275", key: "tests" as const },
+  { value: "27", key: "rules" as const },
+  { value: "320", key: "tests" as const },
 ];
 
 const GUARANTEES = [
