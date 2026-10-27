@@ -16,7 +16,7 @@
  */
 
 export const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://forensic-guard-rspd.vercel.app"
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.forensicguard.com.br"
 ).replace(/\/+$/, "");
 
 export const SITE_NAME = "ForensicGuard";

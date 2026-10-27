@@ -6,7 +6,7 @@ Open-source forensic triage tool. Give it a file, an image, an email or a link,
 and it answers one question: **does this deserve a closer look?** It never opens,
 executes or decodes what it analyses.
 
-### ▶ [Open the live demo](https://forensic-guard-rspd.vercel.app)
+### ▶ [Open the live demo](https://www.forensicguard.com.br)
 
 ![The ForensicGuard landing page, showing the logo, the headline "Descubra o que um arquivo realmente é", and counters for recognised formats, risk rules and backend tests](docs/screenshots/landing.png)
 
