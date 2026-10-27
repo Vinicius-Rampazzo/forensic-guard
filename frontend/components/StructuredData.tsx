@@ -33,8 +33,17 @@ export function StructuredData({
     operatingSystem: "Any",
     inLanguage: locale,
     isAccessibleForFree: true,
-    license: "https://opensource.org/licenses/MIT",
     codeRepository: REPOSITORY_URL,
+    /*
+      `license` ficou de fora de proposito.
+      A primeira versao declarava MIT, e isso era falso: o repositorio nao tem
+      arquivo LICENSE, e sem ele o padrao legal e "todos os direitos
+      reservados" - o oposto do que a marcacao afirmava.
+
+      Para reativar, basta acrescentar um LICENSE ao repositorio e devolver a
+      linha com a URL da licenca escolhida. Enquanto o arquivo nao existir, o
+      campo correto e nenhum.
+    */
     author: {
       "@type": "Person",
       name: "Vinicius Rampazzo",
