@@ -13,9 +13,9 @@ from pydantic import BaseModel, Field
 
 from app.config import Settings, get_settings
 from app.schemas.analysis import AnalysisResponse
-from app.schemas.url_analysis import UrlAnalysisResponse
+from app.schemas.url_analysis import UrlAnalysisResponse, UrlResolutionResponse
 from app.services.analysis_service import analyze_evidence
-from app.services.url_service import analyze_url_evidence
+from app.services.url_service import analyze_url_evidence, resolve_url_destination
 from app.utils.temporary_files import (
     EvidenceTooLargeError,
     temporary_evidence,
@@ -113,3 +113,29 @@ def analyze_url_endpoint(request: UrlRequest) -> UrlAnalysisResponse:
     API precisa de teto. URLs reais raramente passam de 2000.
     """
     return analyze_url_evidence(request.url)
+
+
+@router.post(
+    "/analyze/url/resolve",
+    response_model=UrlResolutionResponse,
+    summary="Follow a URL's redirects and analyse where it lands",
+)
+def resolve_url_endpoint(request: UrlRequest) -> UrlResolutionResponse:
+    """Segue os redirecionamentos e analisa o destino final.
+
+    Esta rota CONTACTA o endereco. E a unica do sistema que faz isso, e por
+    isso ela existe separada de `/analyze/url` em vez de ser um parametro
+    dela: um booleano no corpo da requisicao esconderia, atras de um valor
+    padrao, a diferenca entre nao tocar na rede e tocar.
+
+    Quem chama precisa saber tres coisas, e todas estao no `disclaimer` da
+    resposta:
+
+    1. a requisicao avisa a quem montou o link que ele foi aberto;
+    2. o resultado e para onde ESTE servidor foi mandado, neste instante - um
+       redirecionador pode servir destinos diferentes conforme quem pergunta;
+    3. cada salto e verificado contra enderecos de rede interna antes de ser
+       seguido, porque seguir redirecionamento de terceiro e, por definicao,
+       deixar outra pessoa escolher o que o servidor vai acessar.
+    """
+    return resolve_url_destination(request.url)

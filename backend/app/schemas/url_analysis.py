@@ -91,3 +91,66 @@ class UrlAnalysisResponse(BaseModel):
         ),
         description="Always present, and always the same text.",
     )
+
+
+class RedirectHopSchema(BaseModel):
+    """Um passo da cadeia de redirecionamentos."""
+
+    url: str
+    host: str
+    status_code: int | None = Field(
+        default=None,
+        description="HTTP status returned by this hop, or null when the request failed",
+    )
+
+
+class UrlResolutionResponse(BaseModel):
+    """Resposta de POST /analyze/url/resolve.
+
+    Separada de `UrlAnalysisResponse` de proposito. Sao operacoes diferentes:
+    uma le a estrutura do endereco sem tocar na rede, a outra pede ao servidor
+    que faca a requisicao. Misturar as duas numa resposta so apagaria, para
+    quem consome a API, a diferenca que a ferramenta inteira faz questao de
+    manter visivel.
+    """
+
+    start_url: str = Field(description="The URL the chain started from")
+    hops: list[RedirectHopSchema] = Field(
+        default_factory=list, description="Each step, in order"
+    )
+
+    final_url: str | None = Field(
+        default=None, description="Where the chain ended, when it ended at a destination"
+    )
+    completed: bool = Field(
+        description="True when the chain reached a destination instead of a limit"
+    )
+    stopped_reason: str | None = Field(
+        default=None,
+        description=(
+            "Why the chain stopped early: too_many_hops, timeout, loop, "
+            "internal_address, scheme_not_allowed, no_host, malformed, or a "
+            "request failure"
+        ),
+    )
+
+    destination: UrlAnalysisResponse | None = Field(
+        default=None,
+        description=(
+            "The final destination put through the same analysis a pasted URL "
+            "would receive. Null when the chain did not complete."
+        ),
+    )
+
+    analysis_type: str = Field(default="url_resolution")
+
+    disclaimer: str = Field(
+        default=(
+            "This result required contacting the address, which tells "
+            "whoever built it that the link was opened. It shows where THIS "
+            "server was sent, just now: a redirector can serve a different "
+            "destination depending on who asks, so the victim may be sent "
+            "somewhere else."
+        ),
+        description="Always present, and always the same text.",
+    )

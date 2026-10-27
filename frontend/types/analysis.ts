@@ -240,3 +240,31 @@ export interface UrlAnalysisResult {
   analysis_type: "url";
   disclaimer: string;
 }
+
+/** Um passo da cadeia de redirecionamentos. */
+export interface RedirectHop {
+  url: string;
+  host: string;
+  /** Null quando a requisicao daquele salto falhou. */
+  status_code: number | null;
+}
+
+/**
+ * Resultado de seguir os redirecionamentos ate o destino.
+ *
+ * Tipo proprio, e nao um campo opcional dentro de `UrlAnalysisResult`, porque
+ * as duas operacoes sao diferentes: uma le a estrutura do endereco sem tocar
+ * na rede, a outra pede ao servidor que faca a requisicao.
+ */
+export interface UrlResolutionResult {
+  start_url: string;
+  hops: RedirectHop[];
+  final_url: string | null;
+  completed: boolean;
+  /** Por que parou antes do destino: `too_many_hops`, `loop`, `internal_address`... */
+  stopped_reason: string | null;
+  /** O destino final pela mesma analise que uma URL colada receberia. */
+  destination: UrlAnalysisResult | null;
+  analysis_type: "url_resolution";
+  disclaimer: string;
+}

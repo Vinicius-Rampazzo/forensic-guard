@@ -7,7 +7,11 @@
  * editar, em vez de dez componentes.
  */
 
-import type { AnalysisResult, UrlAnalysisResult } from "@/types/analysis";
+import type {
+  AnalysisResult,
+  UrlAnalysisResult,
+  UrlResolutionResult,
+} from "@/types/analysis";
 import type { HealthResponse } from "@/types/api";
 
 /**
@@ -193,4 +197,38 @@ export async function analyzeUrl(
   }
 
   return (await response.json()) as UrlAnalysisResult;
+}
+
+/**
+ * Segue os redirecionamentos de uma URL e analisa onde ela termina.
+ *
+ * A UNICA funcao deste arquivo que faz o backend tocar a rede. Por isso ela
+ * so e chamada quando a pessoa clica no botao - nunca junto da analise comum,
+ * que continua offline do comeco ao fim.
+ */
+export async function resolveUrl(
+  url: string,
+  signal?: AbortSignal,
+): Promise<UrlResolutionResult> {
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}/analyze/url/resolve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+      signal,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw error;
+    }
+    throw new ApiError("Could not reach the API");
+  }
+
+  if (!response.ok) {
+    throw new ApiError(await describeFailure(response), response.status);
+  }
+
+  return (await response.json()) as UrlResolutionResult;
 }

@@ -7,5 +7,4 @@
 -r requirements.txt
 
 pytest==9.1.1
-httpx2==2.12.0     # cliente HTTP usado pelo TestClient do Starlette 1.6+
 ruff==0.16.6       # linter e formatador

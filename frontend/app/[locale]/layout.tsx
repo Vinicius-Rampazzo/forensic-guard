@@ -21,9 +21,11 @@ import type { ReactNode } from "react";
 import { ApiHealthProvider } from "@/components/ApiHealthProvider";
 import { AppHeader } from "@/components/AppHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { StructuredData } from "@/components/StructuredData";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { routing } from "@/i18n/routing";
 
+import { REPOSITORY_URL, SITE_NAME, SITE_URL } from "../site";
 import "../globals.css";
 
 /**
@@ -54,11 +56,31 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 /**
- * Titulo e descricao da aba, por idioma.
+ * Converte `pt-br` para `pt_BR`, que e o formato que o Open Graph exige.
  *
- * Eram constantes em ingles. Com duas rotas de idioma isso significava que
- * `/pt-br` se anunciava em ingles para buscadores e para a aba do navegador -
- * justamente os dois lugares onde o texto e lido fora da pagina.
+ * O `hreflang` do HTML aceita `pt-br` em qualquer caixa; o Open Graph, nao.
+ * Sao duas especificacoes diferentes lendo a mesma informacao, e e por isso
+ * que o mesmo idioma aparece escrito de tres jeitos nesta pagina: `pt-br` na
+ * URL, `pt-BR` no hreflang e `pt_BR` aqui.
+ */
+function toOpenGraphLocale(locale: string): string {
+  const [language, region] = locale.split("-");
+
+  return region ? `${language}_${region.toUpperCase()}` : language;
+}
+
+/**
+ * Tudo o que esta pagina diz sobre si mesma fora dela.
+ *
+ * Isto alimenta tres leitores diferentes, e cada um le uma parte:
+ *
+ *   - a aba do navegador le o titulo;
+ *   - o buscador le titulo, descricao, canonical e os idiomas alternativos;
+ *   - a rede social le as marcas `og:` e `twitter:` para montar o cartao.
+ *
+ * Tudo sai por idioma. Com duas rotas, `/pt-br` se anunciando em ingles seria
+ * errado nos tres lugares - e sao justamente os lugares onde o texto e lido
+ * por quem ainda nao entrou no site.
  */
 export async function generateMetadata({
   params,
@@ -70,9 +92,85 @@ export async function generateMetadata({
   const resolved = hasLocale(routing.locales, locale) ? locale : routing.defaultLocale;
   const t = await getTranslations({ locale: resolved, namespace: "meta" });
 
+  const title = t("title");
+  const description = t("description");
+
   return {
-    title: t("title"),
-    description: t("description"),
+    /*
+      Base para resolver os caminhos relativos abaixo. Sem ela o Next avisa no
+      build e a imagem de preview sai como `/og-pt-br.png`, que o servidor do
+      LinkedIn nao tem como resolver contra nada.
+    */
+    metadataBase: new URL(SITE_URL),
+
+    title,
+    description,
+    applicationName: SITE_NAME,
+    authors: [{ name: "Vinicius Rampazzo", url: REPOSITORY_URL }],
+    creator: "Vinicius Rampazzo",
+
+    alternates: {
+      /*
+        Canonical e hreflang existem por causa do mesmo problema: as duas
+        rotas mostram o MESMO produto em linguas diferentes. Sem declarar a
+        relacao, o buscador pode tratar uma como copia da outra e esconder
+        alguma das duas. Com ela, entende que sao versoes e entrega cada uma a
+        quem fala aquela lingua.
+
+        `x-default` e para quem nao fala nenhuma das duas: manda para a raiz,
+        onde o proxy decide pelo idioma do navegador.
+      */
+      canonical: `${SITE_URL}/${resolved}`,
+      languages: {
+        "en-US": `${SITE_URL}/en-us`,
+        "pt-BR": `${SITE_URL}/pt-br`,
+        "x-default": SITE_URL,
+      },
+    },
+
+    openGraph: {
+      type: "website",
+      siteName: SITE_NAME,
+      title,
+      description,
+      url: `${SITE_URL}/${resolved}`,
+      /*
+        O Open Graph usa sublinhado E regiao em maiuscula: `pt_BR`, nao
+        `pt_br`. Trocar so o hifen por sublinhado nao basta - foi o que a
+        primeira versao fazia, e saia um valor que nenhuma rede reconhece.
+      */
+      locale: toOpenGraphLocale(resolved),
+      // Declarar a outra versao ajuda a rede a oferecer o idioma certo a quem
+      // compartilha o link para um publico diferente.
+      alternateLocale: routing.locales
+        .filter((other) => other !== resolved)
+        .map(toOpenGraphLocale),
+      images: [
+        {
+          url: `/og-${resolved}.png`,
+          width: 1200,
+          height: 630,
+          alt: `${SITE_NAME} — ${description}`,
+        },
+      ],
+    },
+
+    twitter: {
+      // `summary_large_image` usa a imagem inteira; `summary` a corta num
+      // quadradinho ao lado do texto, que desperdica a arte.
+      card: "summary_large_image",
+      title,
+      description,
+      images: [`/og-${resolved}.png`],
+    },
+
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: { index: true, follow: true, "max-image-preview": "large" },
+    },
+
+    category: "technology",
   };
 }
 
@@ -150,6 +248,12 @@ export default async function LocaleLayout({
   // requisicao - perdendo justamente o ganho de ter o idioma na URL.
   setRequestLocale(locale);
 
+  // A mesma descricao que vai para o <meta>. Os dados estruturados precisam
+  // dizer o mesmo que o resto da pagina: buscador compara, e divergencia entre
+  // o que a marcacao afirma e o que a pagina mostra conta contra.
+  const t = await getTranslations({ locale, namespace: "meta" });
+  const description = t("description");
+
   return (
     // A classe `dark` ja vem marcada no HTML do servidor porque o tema escuro
     // e o padrao da ferramenta. O script acima so a remove quando a pessoa
@@ -161,6 +265,7 @@ export default async function LocaleLayout({
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        <StructuredData locale={locale} description={description} />
         <noscript>
           <style>{NOSCRIPT_REVEAL}</style>
         </noscript>

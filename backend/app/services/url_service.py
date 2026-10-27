@@ -18,6 +18,7 @@ Duas escalas separadas seriam duas ferramentas.
 
 from __future__ import annotations
 
+from app.analyzers.redirect_resolver import resolve_redirects
 from app.analyzers.url_analyzer import UrlAnalysis, analyze_url
 from app.constants.risk_rules import (
     URL_DANGEROUS_SCHEME,
@@ -28,6 +29,7 @@ from app.constants.risk_rules import (
     URL_MIXED_SCRIPTS,
     URL_NON_STANDARD_PORT,
     URL_OBFUSCATED,
+    URL_REDIRECTOR_SHAPE,
     URL_RISKY_TLD,
     URL_SHORTENER,
     URL_WITH_CREDENTIALS,
@@ -37,8 +39,10 @@ from app.constants.risk_rules import (
 )
 from app.schemas.analysis import IndicatorSchema, RiskSchema
 from app.schemas.url_analysis import (
+    RedirectHopSchema,
     UrlAnalysisResponse,
     UrlPartsSchema,
+    UrlResolutionResponse,
 )
 from app.services.indicator_engine import Indicator
 from app.services.risk_engine import assess
@@ -133,6 +137,13 @@ def collect_url_indicators(analysis: UrlAnalysis) -> list[Indicator]:
     if analysis.url_shortener:
         add(URL_SHORTENER, service=parts.registrable_domain)
 
+    if analysis.redirector_shape:
+        add(
+            URL_REDIRECTOR_SHAPE,
+            host=parts.host,
+            identifier=parts.path.lstrip("/"),
+        )
+
     if analysis.non_standard_port:
         add(URL_NON_STANDARD_PORT, port=parts.port, scheme=parts.scheme)
 
@@ -173,4 +184,40 @@ def _build_parts_schema(analysis: UrlAnalysis) -> UrlPartsSchema:
         query=parts.query,
         fragment=parts.fragment,
         is_private_host=analysis.private_host,
+    )
+
+
+def resolve_url_destination(raw_url: str) -> UrlResolutionResponse:
+    """Segue os redirecionamentos e analisa onde a URL realmente termina.
+
+    Esta e a unica operacao do sistema que toca a rede, e por isso ela vive
+    num servico proprio, atras de um endpoint proprio. `analyze_url_evidence`
+    continua sendo offline do comeco ao fim.
+
+    O destino final passa pela MESMA analise da URL enviada. Isso importa: um
+    encurtador que leva a `paypa1-seguranca.tk/login.exe` precisa produzir os
+    mesmos indicadores que apareceriam se aquele endereco tivesse sido colado
+    direto. Analisar so o inicio da cadeia seria parar justamente onde a
+    informacao comeca.
+    """
+    chain = resolve_redirects(raw_url.strip())
+
+    hops = [
+        RedirectHopSchema(url=hop.url, host=hop.host, status_code=hop.status_code)
+        for hop in chain.hops
+    ]
+
+    # Sem destino confirmado nao ha o que analisar. Devolver a cadeia parcial
+    # ainda e util: ela mostra ate onde foi e por que parou.
+    destination = (
+        analyze_url_evidence(chain.final_url) if chain.completed and chain.final_url else None
+    )
+
+    return UrlResolutionResponse(
+        start_url=chain.start_url,
+        hops=hops,
+        final_url=chain.final_url,
+        completed=chain.completed,
+        stopped_reason=chain.stopped_reason,
+        destination=destination,
     )

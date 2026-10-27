@@ -36,8 +36,11 @@ from app.constants.url_patterns import (
     DECOY_EXTENSIONS,
     EXECUTABLE_PATH_EXTENSIONS,
     MAX_PERCENT_ENCODINGS,
+    MAX_SHORTENER_HOST_LENGTH,
+    MAX_SHORTENER_PATH_LENGTH,
     MAX_SUBDOMAIN_LABELS,
     MAX_URL_LENGTH,
+    MIN_SHORTENER_PATH_LENGTH,
     MULTIPART_SUFFIXES,
     RISKY_TLDS,
     STANDARD_PORTS,
@@ -107,6 +110,8 @@ class UrlAnalysis:
     scripts_found: tuple[str, ...] = ()
     risky_tld: bool = False
     url_shortener: bool = False
+    # Tem a FORMA de um redirecionador, mesmo sem estar na lista de conhecidos.
+    redirector_shape: bool = False
     excessive_subdomains: bool = False
     non_standard_port: bool = False
     executable_path: bool = False
@@ -186,6 +191,14 @@ def analyze_url(raw: str) -> UrlAnalysis:
         scripts_found=scripts,
         risky_tld=tld in RISKY_TLDS,
         url_shortener=registrable in URL_SHORTENERS,
+        # A forma so e relatada quando o dominio NAO esta na lista. Nos dois
+        # casos o problema e o mesmo - destino escondido - e dizer duas vezes
+        # inflaria a nota de um unico achado.
+        redirector_shape=(
+            registrable not in URL_SHORTENERS
+            and not private
+            and _looks_like_redirector(host, subdomains, path, split.query, split.fragment)
+        ),
         excessive_subdomains=len(subdomains) > MAX_SUBDOMAIN_LABELS,
         # Porta incomum so vira sinal em host publico. Em rede interna ela e
         # o dia a dia - servidor de desenvolvimento, painel administrativo,
@@ -299,9 +312,7 @@ def _classify_ip_host(host: str) -> tuple[bool, bool]:
     except ValueError:
         return False, _is_internal_hostname(host)
 
-    same_family = (
-        network for network in INTERNAL_NETWORKS if network.version == address.version
-    )
+    same_family = (network for network in INTERNAL_NETWORKS if network.version == address.version)
 
     internal = (
         address.is_loopback
@@ -387,6 +398,53 @@ def _has_double_extension(path: str) -> bool:
         return False
 
     return extensions[-2] in DECOY_EXTENSIONS and extensions[-1] in EXECUTABLE_PATH_EXTENSIONS
+
+
+def _looks_like_redirector(
+    host: str,
+    subdomains: list[str],
+    path: str,
+    query: str,
+    fragment: str,
+) -> bool:
+    """Diz se a URL tem a FORMA de um redirecionador, sem consultar lista.
+
+    A lista de encurtadores conhecidos so pega o que alguem ja pensou em
+    listar, e ela esta sempre desatualizada - existem centenas de servicos e
+    qualquer um hospeda o proprio. Esta funcao olha a estrutura.
+
+    Exige os tres sinais juntos. Cada um sozinho aparece em URL legitima; os
+    tres ao mesmo tempo sao raros fora de um redirecionador, porque site de
+    verdade quase sempre tem caminho descritivo, mais de um nivel, ou
+    parametros.
+
+    O identificador precisa misturar letras e digitos, ou misturar
+    maiusculas e minusculas. Sem isso, `exemplo.com/sobre` seria marcado -
+    e "sobre" e uma palavra, nao um identificador gerado.
+    """
+    if query or fragment or subdomains:
+        return False
+
+    if len(host) > MAX_SHORTENER_HOST_LENGTH:
+        return False
+
+    segments = [segment for segment in path.split("/") if segment]
+
+    if len(segments) != 1:
+        return False
+
+    identifier = segments[0]
+
+    if not MIN_SHORTENER_PATH_LENGTH <= len(identifier) <= MAX_SHORTENER_PATH_LENGTH:
+        return False
+
+    if not identifier.isalnum():
+        return False
+
+    mixes_digits = any(c.isdigit() for c in identifier) and any(c.isalpha() for c in identifier)
+    mixes_case = identifier != identifier.lower() and identifier != identifier.upper()
+
+    return mixes_digits or mixes_case
 
 
 # ---------------------------------------------------------------------------

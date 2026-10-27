@@ -28,3 +28,12 @@ puremagic==2.2.0
 # o que o MVP precisa, e uma dependencia a menos e uma superficie de ataque a
 # menos num projeto que processa arquivos hostis.
 Pillow==12.3.0
+
+# Cliente HTTP, usado APENAS para resolver redirecionamentos quando a pessoa
+# pede explicitamente. Nenhuma outra parte da ferramenta acessa a rede.
+#
+# Subiu de requirements-dev.txt para ca: ja era dependencia de teste, por ser
+# o cliente que o TestClient do Starlette 1.6 exige, e agora passou a ser
+# usado em execucao tambem. E a mesma biblioteca - o projeto nao mantem dois
+# clientes HTTP para a mesma funcao.
+httpx2==2.12.0

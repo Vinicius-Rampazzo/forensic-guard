@@ -179,7 +179,7 @@
     "noExecutionTitle": "Nothing is executed",
     "noExecutionBody": "No macro runs, no image is decoded, no archive is extracted. Files are read in 64 KB blocks, and every parser that touches hostile input is wrapped and bounded.",
     "noNetworkTitle": "Nothing is contacted",
-    "noNetworkBody": "No DNS lookup, no certificate fetch, no page request. Querying a suspicious address tells whoever built it that they are being investigated, so the analysis stays structural.",
+    "noNetworkBody": "No DNS lookup, no certificate, no page request. Contacting a suspicious address tells whoever built it that it is being investigated, so the analysis stays structural. The one exception is a button you press: resolving a shortener's destination, which says what it costs first.",
     "limitsTitle": "What this tool does not do",
     "limitsBody": "ForensicGuard performs static triage. It answers whether something deserves a closer look, never whether it is malware. A clean result means nothing stood out, which is not the same as being safe.",
     "limitsItems": "Does not run the file in a sandbox|Does not query reputation services|Does not decrypt or unpack archives|Does not replace an antivirus|Does not issue verdicts, only indicators|Does not keep history of what you analysed"
@@ -187,5 +187,24 @@
   "meta": {
     "title": "ForensicGuard — Digital Evidence Analyzer",
     "description": "Open-source forensic triage for files, images, emails and links. Hashes, metadata, explainable indicators and a risk score, computed on your own machine without ever opening the file."
+  },
+  "redirect": {
+    "title": "Hidden destination",
+    "hint": "The address does not say where it leads. Finding out requires contacting it — which tells whoever built the link that it was opened. Nothing else in this tool touches the network.",
+    "action": "Resolve destination",
+    "resolving": "Following the chain…",
+    "failed": "Could not resolve the destination",
+    "incomplete": "The chain did not reach a destination",
+    "destination": "Final destination",
+    "reason": {
+      "internal_address": "A hop pointed at an internal network address and was refused. This is the protection working: following it would turn the server into a way into its own network.",
+      "scheme_not_allowed": "A hop tried to redirect to something other than http or https, which has no legitimate use here.",
+      "too_many_hops": "The chain was longer than the limit allows.",
+      "loop": "The chain came back to an address it had already visited.",
+      "timeout": "The chain took longer than the time allowed.",
+      "no_host": "A hop had no host to connect to.",
+      "malformed": "A hop was not a readable address.",
+      "unknown": "The chain stopped before reaching a destination."
+    }
   }
 }

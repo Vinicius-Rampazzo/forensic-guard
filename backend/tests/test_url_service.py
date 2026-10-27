@@ -222,10 +222,7 @@ class TestCombined:
     """O caso completo, somando as verificacoes."""
 
     def test_a_thoroughly_hostile_url_reaches_critical(self) -> None:
-        url = (
-            "http://www.banco.com.br@banco.com.br.seguranca.phish.tk:8443"
-            "/area/fatura.pdf.exe"
-        )
+        url = "http://www.banco.com.br@banco.com.br.seguranca.phish.tk:8443/area/fatura.pdf.exe"
 
         response = analyze_url_evidence(url)
         found = [indicator.id for indicator in response.risk.indicators]
@@ -301,3 +298,71 @@ class TestAnalyzerDirectly:
 
     def test_public_host_is_not_marked_private(self) -> None:
         assert analyze_url("http://45.33.32.156/").private_host is False
+
+
+class TestRedirectorShape:
+    """Deteccao de redirecionador pelo FORMATO, sem lista de conhecidos.
+
+    A lista de encurtadores so alcanca quem alguem ja pensou em listar. Estes
+    testes cobrem o buraco que isso deixa: servicos reais que nao estao nela.
+    """
+
+    def test_detects_a_shortener_absent_from_the_list(self) -> None:
+        """O caso que motivou a regra: linkly.link nao estava na lista."""
+        assert "url.redirector_shape" in ids("https://linkly.link/2zAps")
+
+    def test_detects_other_unknown_redirectors(self) -> None:
+        for url in [
+            "https://abc.io/x7Kp2",
+            "https://go.xyz/aB3dE",
+            "https://l.st/9fTq4",
+        ]:
+            assert "url.redirector_shape" in ids(url), url
+
+    def test_known_shorteners_report_only_once(self) -> None:
+        """Dominio ja na lista dispara `url.shortener`, e nao as duas regras.
+
+        O achado e o mesmo - destino escondido - e relatar duas vezes
+        inflaria a nota de um unico fato.
+        """
+        disparados = ids("https://bit.ly/3xYz1a")
+
+        assert "url.shortener" in disparados
+        assert "url.redirector_shape" not in disparados
+
+    def test_ordinary_urls_are_not_flagged(self) -> None:
+        """O teste que importa: nao gritar a toa.
+
+        Todos estes tem alguma caracteristica de encurtador, mas nenhum e um.
+        """
+        for url in [
+            # Caminho descritivo em vez de identificador gerado.
+            "https://exemplo.com/sobre",
+            # Mais de um nivel de caminho.
+            "https://abc.io/a/b2Cd3",
+            # Tem parametros - o identificador nao e o caminho.
+            "https://abc.io/x7Kp2?utm_source=x",
+            # Tem subdominio.
+            "https://www.abc.io/x7Kp2",
+            # Dominio longo demais para um servico que vende brevidade.
+            "https://minha-empresa-exemplo.com/x7Kp2",
+            # Caminho com extensao e um arquivo, nao um identificador.
+            "https://abc.io/logo2.png",
+            # So letras minusculas e curto: e palavra, nao identificador.
+            "https://abc.io/blog",
+            # Raiz do dominio.
+            "https://abc.io/",
+        ]:
+            assert "url.redirector_shape" not in ids(url), url
+
+    def test_private_hosts_are_not_flagged(self) -> None:
+        """Rede interna nao hospeda encurtador publico."""
+        assert "url.redirector_shape" not in ids("http://192.168.1.10/a1B2c")
+
+    def test_the_evidence_names_the_identifier(self) -> None:
+        """Todo indicador carrega o que o disparou - a regra central do projeto."""
+        indicadores = analyze_url_evidence("https://linkly.link/2zAps").risk.indicators
+        achado = next(i for i in indicadores if i.id == "url.redirector_shape")
+
+        assert achado.evidence["identifier"] == "2zAps"
+        assert achado.evidence["host"] == "linkly.link"

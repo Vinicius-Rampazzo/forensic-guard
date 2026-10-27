@@ -13,6 +13,7 @@ import { AlertTriangle, ShieldOff } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { IndicatorsList } from "@/components/IndicatorsList";
+import { RedirectChain } from "@/components/RedirectChain";
 import { ScrambleText } from "@/components/ScrambleText";
 import { RISK_BAR_COLORS, SeverityBadge } from "@/components/SeverityBadge";
 import { UrlAnatomy } from "@/components/UrlAnatomy";
@@ -36,6 +37,13 @@ export function UrlReport({ result }: { result: UrlAnalysisResult }) {
   }
 
   const scored = result.risk.indicators.filter((indicator) => indicator.score > 0).length;
+
+  // Encurtador conhecido ou endereco com forma de redirecionador: nos dois
+  // casos o destino nao da para ser lido na estrutura.
+  const hidesDestination = result.risk.indicators.some(
+    (indicator) =>
+      indicator.id === "url.shortener" || indicator.id === "url.redirector_shape",
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -103,6 +111,13 @@ export function UrlReport({ result }: { result: UrlAnalysisResult }) {
       </Card>
 
       <UrlAnatomy parts={result.parts} url={result.url} />
+
+      {/*
+        So aparece quando a analise ja apontou que o destino esta escondido.
+        Oferecer "resolver destino" em toda URL convidaria a contatar
+        enderecos suspeitos sem motivo - o oposto do que a ferramenta ensina.
+      */}
+      {hidesDestination && <RedirectChain url={result.url} />}
 
       <div className="flex flex-col gap-3">
         {/*

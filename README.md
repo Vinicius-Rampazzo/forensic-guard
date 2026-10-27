@@ -55,9 +55,21 @@ Every reader goes through [`app/utils/streaming.py`](backend/app/utils/streaming
 `.convert()` and saving are never called. That is what neutralises decompression
 bombs, which are harmless until a pixel is rendered.
 
-**Nothing on the network is contacted.** URL analysis is purely structural.
-Querying a suspicious address tells whoever built it that they are being
-investigated, so the tool dissects the address instead of visiting it.
+**Nothing on the network is contacted, unless you ask for it.** Analysis is
+structural by default, because querying a suspicious address tells whoever
+built it that they are being investigated. There is exactly one exception, and
+it is a button: resolving a shortener's destination, which the interface only
+offers when the destination is hidden and which states the cost before the
+click. A boolean flag with a default would have hidden that difference; a
+separate endpoint cannot.
+
+**Following a redirect means letting a stranger choose what the server
+fetches.** That is the definition of SSRF, and the most dangerous surface this
+application has — a redirect to `169.254.169.254` returns the machine's own
+cloud credentials. Every hop is re-checked before connecting, not just the
+first, and the address rules there are deliberately broader than the ones used
+for reporting: two of them differ, and
+[a test pins both](backend/tests/test_redirect_resolver.py).
 
 **Every score carries its evidence.** A number without a justification is an
 opinion, not a finding — so each indicator ships the value that triggered it.
@@ -673,9 +685,15 @@ the platform — a fixed port does not work.
 | Root Directory | `frontend` |
 | Framework Preset | Next.js (detected) |
 | `NEXT_PUBLIC_API_URL` | the backend URL, no trailing slash |
+| `NEXT_PUBLIC_SITE_URL` | this site's own URL, no trailing slash |
 
 `NEXT_PUBLIC_*` is baked in at build time, not read at runtime, so changing it
 requires a new deployment.
+
+`NEXT_PUBLIC_SITE_URL` is what the canonical link, the sitemap and the social
+preview image are built from. They have to be absolute: the machine that
+renders a link preview belongs to LinkedIn or WhatsApp, and it has nothing to
+resolve a relative path against. Point it at your own domain if you attach one.
 
 ### Two details that are easy to get wrong
 

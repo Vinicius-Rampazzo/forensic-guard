@@ -226,6 +226,20 @@ URL_RISKY_TLD = RiskRule(
     score=15,
 )
 
+URL_REDIRECTOR_SHAPE = RiskRule(
+    id="url.redirector_shape",
+    title="Address is shaped like a link redirector",
+    description=(
+        "The domain is short, there is a single path segment that looks "
+        "generated rather than written, and there are no parameters. That is "
+        "the shape of a redirector, even when the service is not a known one "
+        "- and anyone can host their own. As with any redirector, the "
+        "destination is hidden until the link is followed."
+    ),
+    severity=Severity.LOW,
+    score=10,
+)
+
 URL_SHORTENER = RiskRule(
     id="url.shortener",
     title="URL uses a link shortening service",
@@ -454,6 +468,7 @@ RISK_RULES: tuple[RiskRule, ...] = (
     URL_DOUBLE_EXTENSION,
     URL_RISKY_TLD,
     URL_SHORTENER,
+    URL_REDIRECTOR_SHAPE,
     URL_EXCESSIVE_SUBDOMAINS,
     URL_INSECURE_SCHEME,
     URL_NON_STANDARD_PORT,

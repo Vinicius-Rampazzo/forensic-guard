@@ -179,7 +179,7 @@
     "noExecutionTitle": "Nada é executado",
     "noExecutionBody": "Nenhuma macro roda, nenhuma imagem é decodificada, nenhum arquivo compactado é extraído. A leitura é feita em blocos de 64 KB, e todo parser que toca entrada hostil tem teto e tratamento de erro.",
     "noNetworkTitle": "Nada é contatado",
-    "noNetworkBody": "Sem consulta de DNS, sem certificado, sem acessar a página. Consultar um endereço suspeito avisa quem o montou que ele está sendo investigado — por isso a análise fica estrutural.",
+    "noNetworkBody": "Sem consulta de DNS, sem certificado, sem acessar a página. Contatar um endereço suspeito avisa quem o montou que ele está sendo investigado, por isso a análise fica estrutural. A única exceção é um botão que você aperta: resolver o destino de um encurtador, que avisa o custo antes.",
     "limitsTitle": "O que esta ferramenta não faz",
     "limitsBody": "O ForensicGuard faz triagem estática. Ele responde se algo merece uma olhada mais atenta, nunca se é malware. Resultado limpo significa que nada se destacou — o que não é o mesmo que ser seguro.",
     "limitsItems": "Não executa o arquivo em ambiente isolado|Não consulta serviços de reputação|Não descriptografa nem extrai arquivos compactados|Não substitui um antivírus|Não emite veredito, apenas indicadores|Não guarda histórico do que você analisou"
@@ -187,5 +187,24 @@
   "meta": {
     "title": "ForensicGuard — Analisador de Evidências Digitais",
     "description": "Triagem forense de código aberto para arquivos, imagens, e-mails e links. Hashes, metadados, indicadores explicáveis e uma pontuação de risco, calculados na sua máquina sem nunca abrir o arquivo."
+  },
+  "redirect": {
+    "title": "Destino oculto",
+    "hint": "O endereço não diz para onde leva. Descobrir exige contatá-lo — o que avisa a quem montou o link que ele foi aberto. Nenhuma outra parte desta ferramenta toca a rede.",
+    "action": "Resolver destino",
+    "resolving": "Seguindo a cadeia…",
+    "failed": "Não foi possível resolver o destino",
+    "incomplete": "A cadeia não chegou a um destino",
+    "destination": "Destino final",
+    "reason": {
+      "internal_address": "Um salto apontou para um endereço de rede interna e foi recusado. É a proteção funcionando: segui-lo transformaria o servidor numa porta de entrada para a própria rede.",
+      "scheme_not_allowed": "Um salto tentou redirecionar para algo que não é http nem https, o que não tem uso legítimo aqui.",
+      "too_many_hops": "A cadeia ficou mais longa que o limite permite.",
+      "loop": "A cadeia voltou para um endereço por onde já tinha passado.",
+      "timeout": "A cadeia demorou mais que o tempo permitido.",
+      "no_host": "Um salto não tinha host para conectar.",
+      "malformed": "Um salto não era um endereço legível.",
+      "unknown": "A cadeia parou antes de chegar a um destino."
+    }
   }
 }

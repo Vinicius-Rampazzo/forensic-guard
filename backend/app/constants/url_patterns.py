@@ -54,13 +54,35 @@ STANDARD_PORTS = {
 RISKY_TLDS = frozenset(
     {
         # gratuitos / sem verificacao
-        "tk", "ml", "ga", "cf", "gq",
+        "tk",
+        "ml",
+        "ga",
+        "cf",
+        "gq",
         # colidem com extensao de arquivo
-        "zip", "mov",
+        "zip",
+        "mov",
         # historicamente associados a campanhas de baixo custo
-        "top", "xyz", "click", "link", "work", "country", "stream",
-        "download", "loan", "review", "cam", "rest", "quest", "cfd",
-        "sbs", "icu", "bar", "monster", "lol", "buzz",
+        "top",
+        "xyz",
+        "click",
+        "link",
+        "work",
+        "country",
+        "stream",
+        "download",
+        "loan",
+        "review",
+        "cam",
+        "rest",
+        "quest",
+        "cfd",
+        "sbs",
+        "icu",
+        "bar",
+        "monster",
+        "lol",
+        "buzz",
     }
 )
 
@@ -74,9 +96,27 @@ RISKY_TLDS = frozenset(
 # trafego que esta ferramenta vai ver.
 MULTIPART_SUFFIXES = frozenset(
     {
-        "com.br", "net.br", "org.br", "gov.br", "edu.br", "com.ar", "com.mx",
-        "co.uk", "org.uk", "ac.uk", "gov.uk", "co.jp", "co.kr", "co.in",
-        "com.au", "net.au", "org.au", "co.za", "com.cn", "com.tr", "com.pt",
+        "com.br",
+        "net.br",
+        "org.br",
+        "gov.br",
+        "edu.br",
+        "com.ar",
+        "com.mx",
+        "co.uk",
+        "org.uk",
+        "ac.uk",
+        "gov.uk",
+        "co.jp",
+        "co.kr",
+        "co.in",
+        "com.au",
+        "net.au",
+        "org.au",
+        "co.za",
+        "com.cn",
+        "com.tr",
+        "com.pt",
     }
 )
 
@@ -101,14 +141,75 @@ MAX_SUBDOMAIN_LABELS = 3
 # triagem offline nao faz.
 URL_SHORTENERS = frozenset(
     {
-        "bit.ly", "tinyurl.com", "goo.gl", "t.co", "ow.ly", "is.gd",
-        "buff.ly", "rebrand.ly", "cutt.ly", "shorturl.at", "rb.gy",
-        "tiny.cc", "bl.ink", "s.id", "v.gd", "clck.ru", "u.to",
-        "adf.ly", "bc.vc", "j.mp", "lnkd.in", "db.tt", "qr.net",
-        "ity.im", "q.gs", "po.st", "tr.im", "x.co", "short.io",
-        "encurtador.com.br", "bit.do", "soo.gd", "1url.com",
+        "bit.ly",
+        "tinyurl.com",
+        "goo.gl",
+        "t.co",
+        "ow.ly",
+        "is.gd",
+        "buff.ly",
+        "rebrand.ly",
+        "cutt.ly",
+        "shorturl.at",
+        "rb.gy",
+        "tiny.cc",
+        "bl.ink",
+        "s.id",
+        "v.gd",
+        "clck.ru",
+        "u.to",
+        "adf.ly",
+        "bc.vc",
+        "j.mp",
+        "lnkd.in",
+        "db.tt",
+        "qr.net",
+        "ity.im",
+        "q.gs",
+        "po.st",
+        "tr.im",
+        "x.co",
+        "short.io",
+        "encurtador.com.br",
+        "bit.do",
+        "soo.gd",
+        "1url.com",
     }
 )
+
+
+# Formato tipico de um redirecionador, para alcancar os que nao estao na lista.
+#
+# A lista acima tem um limite estrutural: ela so pega o que alguem ja pensou em
+# listar. Existem centenas de servicos de encurtamento, e qualquer pessoa pode
+# hospedar o proprio em dez minutos - entao a lista esta permanentemente
+# desatualizada, por construcao.
+#
+# A saida e parar de perguntar "este dominio e conhecido?" e passar a perguntar
+# "esta URL tem a forma de um redirecionador?". A forma e bem caracteristica:
+#
+#     https://linkly.link/2zAps
+#            |___________|_____|
+#              host curto   um unico segmento curto e aleatorio
+#
+# Tres sinais juntos:
+#   1. host curto, sem subdominio (o servico vende brevidade);
+#   2. caminho com UM segmento so, curto, sem extensao nem palavra legivel;
+#   3. nada de parametros nem fragmento - o identificador E o caminho.
+#
+# Isoladamente cada um aparece em URLs comuns. Os tres ao mesmo tempo, nao:
+# um site de verdade quase sempre tem caminho descritivo, mais de um nivel,
+# ou parametros.
+
+# Acima disto o dominio e longo demais para um servico que vende brevidade.
+MAX_SHORTENER_HOST_LENGTH = 15
+
+# Comprimento maximo do identificador. Encurtadores usam de 4 a 10 caracteres;
+# acima disso costuma ser caminho de verdade.
+MAX_SHORTENER_PATH_LENGTH = 12
+
+# Abaixo disto nao da para distinguir identificador de palavra curta.
+MIN_SHORTENER_PATH_LENGTH = 4
 
 
 # ---------------------------------------------------------------------------
@@ -122,9 +223,29 @@ URL_SHORTENERS = frozenset(
 # costuma ser o passo final da entrega.
 EXECUTABLE_PATH_EXTENSIONS = frozenset(
     {
-        ".exe", ".scr", ".bat", ".cmd", ".com", ".pif", ".vbs", ".vbe",
-        ".js", ".jse", ".wsf", ".wsh", ".jar", ".msi", ".ps1", ".hta",
-        ".lnk", ".reg", ".apk", ".dmg", ".iso", ".img", ".cpl",
+        ".exe",
+        ".scr",
+        ".bat",
+        ".cmd",
+        ".com",
+        ".pif",
+        ".vbs",
+        ".vbe",
+        ".js",
+        ".jse",
+        ".wsf",
+        ".wsh",
+        ".jar",
+        ".msi",
+        ".ps1",
+        ".hta",
+        ".lnk",
+        ".reg",
+        ".apk",
+        ".dmg",
+        ".iso",
+        ".img",
+        ".cpl",
     }
 )
 
@@ -134,8 +255,21 @@ EXECUTABLE_PATH_EXTENSIONS = frozenset(
 # extensao final.
 DECOY_EXTENSIONS = frozenset(
     {
-        ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
-        ".jpg", ".jpeg", ".png", ".gif", ".txt", ".csv", ".zip", ".rar",
+        ".pdf",
+        ".doc",
+        ".docx",
+        ".xls",
+        ".xlsx",
+        ".ppt",
+        ".pptx",
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".gif",
+        ".txt",
+        ".csv",
+        ".zip",
+        ".rar",
     }
 )
 
